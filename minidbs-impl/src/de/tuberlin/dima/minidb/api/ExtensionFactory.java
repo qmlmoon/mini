@@ -40,7 +40,7 @@ import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
 
 public class ExtensionFactory extends AbstractExtensionFactory {
-
+	//test
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
 		throw new UnsupportedOperationException("Method not yet supported");
