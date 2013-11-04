@@ -33,6 +33,8 @@ public class TablePageImpl implements TablePage{
 	private boolean isExpired;
 	private boolean isModified;
 	
+	private final int VARCHAR_NULL_LENGTH = -1;
+	
 	public TablePageImpl(TableSchema schema, byte[] binPage) throws PageFormatException {
 		//TODO:check binPage.length == schema.getPageSize() ??
 		this.schema = schema; 
@@ -211,13 +213,15 @@ public class TablePageImpl implements TablePage{
 					field.encodeBinary(binPage, chunkOffset);
 					
 					long pointer = 0;
+					if(field.isNULL())
+						fieldLen = VARCHAR_NULL_LENGTH;
 					pointer |= fieldLen;
 					pointer <<= 32;
 					pointer &= 0xffffffff00000000L;
 					pointer |= chunkOffset;	//length of the field is high 32-bit, while offset is low 32-bit 
 					encodeBigIntAsBinary(pointer, binPage, recordOffset);
 					recordOffset += 8;
-					System.out.println("++++++++++++++++++++++++++++++++++++ in insert tuple : offset is "+chunkOffset+" and length is "+fieldLen);
+					System.out.println("******* in insert tuple : offset is "+chunkOffset+" and length is "+fieldLen);
 				}
 			}
 			else {
@@ -312,10 +316,12 @@ public class TablePageImpl implements TablePage{
 					int high = (int) (pointer.getValue() >>> 32);				//length of the field
 					
 					System.out.println("+++++++++++++++++++++++++++++++++++++ in get tuple : offset is "+low+" and length is "+high);
-					if(high == 0)
+					if(high == VARCHAR_NULL_LENGTH) {
 						field = dataType.getNullValue();
-					else
+					}
+					else {
 						field = dataType.getFromBinary(binPage, low, high);
+					}
 					recordOffset += 8;
 				}
 			}
