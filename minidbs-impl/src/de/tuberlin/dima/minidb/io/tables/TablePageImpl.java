@@ -1,5 +1,6 @@
 package de.tuberlin.dima.minidb.io.tables;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -81,7 +82,7 @@ public class TablePageImpl implements TablePage{
 		IntField.encodeIntAsBinary(chunkOffset, binpage, 16);
 		
 		this.isExpired = false;
-		this.isModified = false;
+		this.isModified = true;
 	}
 	
 	private void parseBinaryPageHeader() throws PageFormatException {
@@ -160,57 +161,60 @@ public class TablePageImpl implements TablePage{
 		int recordsEndPos = numRecords*recordWidth + TABLE_DATA_PAGE_HEADER_BYTES;
 		if(this.chunkOffset <= recordsEndPos) 
 			throw new PageFormatException();
-
-
-		byte[] record = new byte[this.recordWidth];
-		IntField.encodeIntAsBinary(0, record, 0);	// set tombstone false 
-		int recordOffset = 4;	// metadata offset
-
-		int newChunkOffset = this.chunkOffset;
-		List<byte[]> varList = new LinkedList<byte[]>();
 		
+		DataField field = null;
+		BasicType type = null;
+		
+		int totalLength = recordWidth;
+		for(int i=0; i<tuple.getNumberOfFields(); ++i) {
+			field = tuple.getField(i);
+			type = field.getBasicType();
+			if(type.isArrayType() && ! type.isFixLength()) {
+				totalLength += field.getNumberOfBytes();
+			}
+		}
+		
+		if(totalLength > (this.chunkOffset-recordsEndPos)) {
+			return false;	// not enough space
+		}
+
+		this.numRecords ++;
+		this.isModified = true;
+		
+		int recordOffset = recordsEndPos;
+		
+		//set metadata, tombstone as false
+		IntField.encodeIntAsBinary(0, binPage, recordOffset);
+		recordOffset += 4;
+
 		//TODO: not sure if like this
 		for(int i = 0; (i < tuple.getNumberOfFields()); ++i) {
-			DataField field = tuple.getField(i);
-			BasicType type = field.getBasicType();
+			field = tuple.getField(i);
+			type = field.getBasicType();
 			
 			if(type.isArrayType()) {
 				if(type.isFixLength()) {
 					//fixed length array, store the whole value
-					recordOffset += field.encodeBinary(record, recordOffset);
+					recordOffset += field.encodeBinary(binPage, recordOffset);
 				}
 				else {
 					//variable length array
 					int fieldLen = field.getNumberOfBytes();
-					newChunkOffset -= fieldLen;
+					chunkOffset -= fieldLen;
+					field.encodeBinary(binPage, chunkOffset);
 					
-					//TODO: encode big in !!!
-					long pointer = (fieldLen << 32) | newChunkOffset;	 
-					encodeBigIntAsBinary(pointer, record, recordOffset);
+					long pointer = (fieldLen << 32) | chunkOffset;	//length of the field is high 32-bit, while offset is low 32-bit 
+					encodeBigIntAsBinary(pointer, binPage, recordOffset);
 					recordOffset += 8;
-					
-					byte[] encoded = new byte[fieldLen];
-					field.encodeBinary(encoded, 0);
-					varList.add(encoded);
+					System.out.println("in insert tuple : offset is "+chunkOffset+" and length is "+fieldLen);
 				}
 			}
 			else {
 				//fixed length non-array value
-				recordOffset += field.encodeBinary(record, recordOffset);
+
+				System.out.println("encode field of type "+type.toString()+" with value "+field.toString());
+				recordOffset += field.encodeBinary(binPage, recordOffset);
 			}
-		}
-		if(newChunkOffset < (recordsEndPos+recordWidth)) {
-			return false;	// not enough space
-		}
-		else {
-			//do the actual insertion
-			System.arraycopy(record, 0, binPage, recordsEndPos, record.length);
-			for(byte[] b : varList) {
-				this.chunkOffset -= b.length;
-				System.arraycopy(b, 0, binPage, this.chunkOffset, b.length);
-			}
-			this.numRecords ++;
-			this.isModified = true;
 		}
 		return true;
 	}
@@ -267,7 +271,7 @@ public class TablePageImpl implements TablePage{
 		
 		int addedCols = 0;
 		int schemaColIndex = 0;
-		for ( ; addedCols < numCols && (columnBitmap != 0) && (schemaColIndex < schema.getNumberOfColumns()); columnBitmap >>>= 1, schemaColIndex++) {
+		for ( ; (addedCols < numCols) && (columnBitmap != 0) && (schemaColIndex < schema.getNumberOfColumns()); columnBitmap >>>= 1, schemaColIndex++) {
 			if ((columnBitmap & 0x1) == 0) {
 				continue;
 			}
@@ -278,8 +282,7 @@ public class TablePageImpl implements TablePage{
 			if(dataType.isArrayType()) {
 				if(dataType.isFixLength()) {
 					//TODO: treat as fixed or variable ?? now as fixed
-					int len = dataType.getNumberOfBytes() * dataType.getLength();
-					
+					int len = dataType.getNumberOfBytes();
 					field = dataType.getFromBinary(binPage, recordOffset, len);
 					recordOffset += len;
 
@@ -290,6 +293,7 @@ public class TablePageImpl implements TablePage{
 					int low = (int) (pointer.getValue() & 0x00000000ffffffff);	//offset to field on the page
 					int high = (int) (pointer.getValue() >>> 32);				//length of the field
 					
+					System.out.println("in get tuple : offset is "+low+" and length is "+high);
 					field = dataType.getFromBinary(binPage, low, high);
 					recordOffset += 8;
 				}
@@ -298,6 +302,7 @@ public class TablePageImpl implements TablePage{
 				//a fixed length value
 				field = dataType.getFromBinary(binPage, recordOffset);
 				recordOffset += dataType.getNumberOfBytes();
+				System.out.println("get field of type "+dataType.toString()+" with value "+field.toString());
 			}
 
 			//TODO: like this or the same as column bitmap ??
