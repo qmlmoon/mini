@@ -13,7 +13,9 @@ public class TupleIteratorImpl implements TupleIterator{
 	TupleIteratorImpl(DataTuple [] tuples){
 		index = -1;
 		for(int i = 0; i < tuples.length; i++){
-			list.add(tuples[i]);
+			if(tuples[i] != null){
+				list.add(tuples[i]);
+			}
 		}
 	}
 	

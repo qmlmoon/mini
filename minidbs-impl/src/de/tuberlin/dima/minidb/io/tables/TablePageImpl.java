@@ -11,6 +11,7 @@ import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.core.IntField;
+import de.tuberlin.dima.minidb.core.RID;
 import de.tuberlin.dima.minidb.io.PageExpiredException;
 import de.tuberlin.dima.minidb.io.PageFormatException;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
@@ -334,23 +335,37 @@ public class TablePageImpl implements TablePage{
 	@Override
 	public TupleIterator getIterator(int numCols, long columnBitmap)
 			throws PageTupleAccessException, PageExpiredException {
-		// TODO Auto-generated method stub
-		return null;
+		DataTuple [] tuples = new DataTuple[this.numRecords];
+		for(int i = 0; i < this.numRecords; i ++){
+			tuples[i] = this.getDataTuple(i, columnBitmap, numCols); //tuples[i] might be null
+		}
+		TupleIterator iter = new TupleIteratorImpl(tuples);
+		return iter;
 	}
 
 	@Override
 	public TupleIterator getIterator(LowLevelPredicate[] preds, int numCols,
 			long columnBitmap) throws PageTupleAccessException,
 			PageExpiredException {
-		// TODO Auto-generated method stub
-		return null;
+		DataTuple [] tuples = new DataTuple[this.numRecords];
+		for(int i = 0; i < this.numRecords; i ++){
+			tuples[i] = this.getDataTuple(preds, i, columnBitmap, numCols); //tuples[i] might be null
+		}
+		TupleIterator iter = new TupleIteratorImpl(tuples);
+		return iter;
 	}
 
 	@Override
 	public TupleRIDIterator getIteratorWithRID()
 			throws PageTupleAccessException, PageExpiredException {
-		// TODO Auto-generated method stub
-		return null;
+		DataTuple [] tuples = new DataTuple[this.numRecords];
+		RID []  rids = new RID[this.numRecords];
+		for(int i = 0; i < this.numRecords; i ++){
+			tuples[i] = this.getDataTuple(i, Long.MAX_VALUE, schema.getNumberOfColumns()); //tuples[i] might be null
+			rids[i] = new RID(this.pageNumber, i);			
+		}
+		TupleRIDIterator iter = new TupleRIDIteratorImpl(tuples,rids);
+		return iter;
 	}
 	
 }
