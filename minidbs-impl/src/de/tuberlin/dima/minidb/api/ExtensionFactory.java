@@ -50,7 +50,8 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		TablePageImpl tp = new TablePageImpl(schema, binaryPage);
+		return tp;
 	}
 
 	@Override
