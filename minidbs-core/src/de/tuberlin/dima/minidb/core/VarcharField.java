@@ -61,7 +61,7 @@ public final class VarcharField extends DataField
 	@Override
 	public int getNumberOfBytes()
 	{
-		return this.charData == null ? 0 : this.charData.length() * 2;
+		return this.charData == null ? 2 : this.charData.length() * 2;
 	}
 
 	@Override
@@ -97,7 +97,7 @@ public final class VarcharField extends DataField
 	@Override
 	public int hashCode()
 	{
-		return this.charData == null ? 0 : this.charData.hashCode();
+		return this.charData == null ? 2 : this.charData.hashCode();
 	}
 	
 	/* (non-Javadoc)
@@ -143,7 +143,9 @@ public final class VarcharField extends DataField
 	public int encodeBinary(byte[] buffer, int offset)
 	{
 		if (this.charData == null) {
-			return 0;
+			buffer[offset    ] = 0;
+			buffer[offset + 1] = 0;
+			return 2;
 		}
 		else {
 			for (int i = 0; i < this.charData.length(); i++) {
@@ -178,13 +180,17 @@ public final class VarcharField extends DataField
 	 */
 	public static VarcharField getFieldFromBinary(byte[] binaryEncoded, int offs, int len)
 	{
+		if (binaryEncoded.length >= offs + 2 && len == 2 &&
+				binaryEncoded[offs] == 0 && binaryEncoded[offs + 1] == 0)
+			{
+				return NULL_VALUE;
+			}
 		StringBuilder bld = new StringBuilder(len >> 1);
 		for (int i = 0; i < len - 1; i += 2) {
 			char c = (char) ((binaryEncoded[offs++] & 0x00ff) |
 			                ((binaryEncoded[offs++] << 8) &0xff00));
 			bld.append(c);
 		}
-		
 		return new VarcharField(bld.toString().trim());
 	}
 

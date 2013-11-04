@@ -295,6 +295,7 @@ public class TestTablePageStudents
 						}
 						tmpColumnBitmap >>>= 1;
 					}
+					
 					DataTuple inPage = page.getDataTuple(predicates, i, columnBitmap, columnsToFetch.size());
 					for(int x = 0; x < predicates.length; x++)
 					{
@@ -353,8 +354,8 @@ public class TestTablePageStudents
 				byte[] binPage = page.getBuffer();
 				page = AbstractExtensionFactory.getExtensionFactory().createTablePage(schema, binPage);
 				assertFalse("Page must not have been modified, yet", page.hasBeenModified());
-				assertTrue("Record count is wrong.", list.size() == page.getNumRecordsOnPage());
-				
+				assertTrue("Record count is wrong." , list.size() == page.getNumRecordsOnPage());
+				System.out.println("sni" + sni);
 				// iterate over the page and check every second tuple
 				TupleIterator iter = page.getIterator(numCols, Long.MAX_VALUE);
 				for (int i = 0; i < list.size(); i++) {
@@ -460,7 +461,6 @@ public class TestTablePageStudents
 				for (int i = 0; i < list.size(); i++) {
 					assertTrue(page.insertTuple(list.get(i)));
 				}
-				
 				TupleIterator noRID = page.getIterator(numCols, Long.MAX_VALUE);
 				TupleRIDIterator withRID = page.getIteratorWithRID();
 				while (withRID.hasNext()) {

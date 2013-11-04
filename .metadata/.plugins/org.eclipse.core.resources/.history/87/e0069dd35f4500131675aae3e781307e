@@ -1,0 +1,13 @@
+package test;
+
+public class arr {
+	public static void main(String args[]) {
+		byte [] a = {1, 1, 0, 0};
+		byte [] b = a;
+		byte [] c = new byte[5];
+		System.arraycopy(a, 0, c, 0, a.length);
+		System.out.println(a);
+		System.out.println(b);
+		System.out.println(c);
+	}
+}

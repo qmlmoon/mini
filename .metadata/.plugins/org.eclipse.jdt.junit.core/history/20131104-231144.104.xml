@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?><testrun name="Rerun de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents.testExpirationOfEntries" project="minidbs-test" tests="1" started="1" failures="0" errors="0" ignored="0">
+  <testcase name="testExpirationOfEntries" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.082"/>
+</testrun>

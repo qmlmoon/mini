@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.DataType"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.BasicType"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.SmallIntField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.BigIntField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.FloatField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.DoubleField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.CharField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.DateField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.TimeField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.TimestampField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.VarcharField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.RID"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.core.IntField"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.catalogue.TableSchema"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.catalogue.ColumnSchema"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.io.tables.ImpTablePage"/>
+</qualifiedTypeNameHistroy>

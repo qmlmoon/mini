@@ -13,6 +13,7 @@ import de.tuberlin.dima.minidb.io.PageFormatException;
 import de.tuberlin.dima.minidb.io.PageSize;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
+import de.tuberlin.dima.minidb.io.tables.ImpTablePage;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
@@ -40,15 +41,22 @@ import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
 
 public class ExtensionFactory extends AbstractExtensionFactory {
-	//test
+	
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		if (schema.getPageSize().getNumberOfBytes() != binaryPage.length)
+			throw new PageFormatException();
+		else
+			return new ImpTablePage(schema, binaryPage);
 	}
 
 	@Override
 	public TablePage initTablePage(TableSchema schema, byte[] binaryPage, int newPageNumber) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		if (schema.getPageSize().getNumberOfBytes() != binaryPage.length)
+			throw new PageFormatException();
+		else
+			return new ImpTablePage(schema, binaryPage, newPageNumber);
+		
 	}
 
 	@Override

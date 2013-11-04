@@ -1,0 +1,8 @@
+package test;
+
+public class arr {
+	public static void main() {
+		byte [] a = {1, 1, 0, 0};
+		System.out.print(a);
+	}
+}

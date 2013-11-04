@@ -1,0 +1,53 @@
+package de.tuberlin.dima.minidb.io.tables;
+
+import de.tuberlin.dima.minidb.core.DataTuple;
+import de.tuberlin.dima.minidb.io.tables.TupleIterator;
+
+
+public class ImpTupleIterator implements TupleIterator {
+
+	private boolean hasnext;
+	
+	private ImpTupleIterator nextIterator;
+	
+	private DataTuple dataTuple;
+	
+	public ImpTupleIterator() {
+		this.hasnext = false;
+		this.dataTuple = null;
+	}
+	
+	public ImpTupleIterator(DataTuple data) {
+		this.hasnext = false;
+		this.dataTuple = data;
+	}
+	
+	public void setNext(ImpTupleIterator t) {
+		this.hasnext = true;
+		this.nextIterator = t;
+	}
+	
+
+	public ImpTupleIterator getNextIterator() {
+		return this.nextIterator;
+	}
+	
+	public DataTuple getDataTuple() {
+		return dataTuple;
+	}
+	
+	@Override
+	public boolean hasNext() {
+		return this.hasnext;
+	}
+	
+	@Override
+	public DataTuple next(){
+		return this.nextIterator.getDataTuple();
+	}
+	
+	
+	
+	
+
+}

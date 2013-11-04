@@ -1,0 +1,5 @@
+package de.tuberlin.dima.minidb.io.tables;
+
+public class ImpTupleRIDIterator {
+
+}
