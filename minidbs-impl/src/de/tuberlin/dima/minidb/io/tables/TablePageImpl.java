@@ -1,7 +1,16 @@
 package de.tuberlin.dima.minidb.io.tables;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import de.tuberlin.dima.minidb.catalogue.ColumnSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
+import de.tuberlin.dima.minidb.core.BasicType;
+import de.tuberlin.dima.minidb.core.BigIntField;
+import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
+import de.tuberlin.dima.minidb.core.DataType;
+import de.tuberlin.dima.minidb.core.IntField;
 import de.tuberlin.dima.minidb.io.PageExpiredException;
 import de.tuberlin.dima.minidb.io.PageFormatException;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
@@ -14,25 +23,65 @@ import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
  *
  */
 public class TablePageImpl implements TablePage{
+
+	private TableSchema schema;
+	private byte[] binPage;
 	
 	private int pageNumber;
-	private int recordsNum;
+	private int numRecords;
 	private int recordWidth;
 	private int chunkOffset;
+	
 	private boolean isExpired;
 	private boolean isModified;
-	private byte[] binPage;
-	private TableSchema schema;
+	
+
+	
+	public TablePageImpl(TableSchema schema, byte[] binPage) throws PageFormatException {
+		//TODO:check binPage.length == schema.getPageSize() ??
+		this.schema = schema; 
+		this.binPage = binPage;
+		
+		parseBinaryPageHeader();
+		
+		this.isExpired = false;
+		this.isModified = false;
+	}
 	
 	public TablePageImpl(TableSchema tableSchema, byte [] binpage, int pageNum) throws PageFormatException{
-		pageNumber = pageNum;
-		schema = tableSchema;
-		binPage = binpage;
-		pageNumber = pageNum;
-		isModified = false;
-		recordsNum = 0;
-		//TODO if the header was found to be corrupt. Throw PageFormatException
+		//TODO:check binPage.length == schema.getPageSize() ??
+		this.schema = tableSchema;
+		this.binPage = binpage;
+		
+		//TODO:Initialize from the header or initialize header ??
+		parseBinaryPageHeader();
+		
+		this.pageNumber = pageNum;
+		this.numRecords = 0;
+		this.chunkOffset = 32; //TODO: check later!!
 
+		this.isExpired = false;
+		this.isModified = false;
+	}
+	
+	private void parseBinaryPageHeader() throws PageFormatException {
+		if(binPage == null) {
+			throw new PageFormatException("Null Binary Page!");
+		}
+		else {
+			if(binPage.length < TABLE_DATA_PAGE_HEADER_BYTES)
+				throw new PageFormatException("Invalid Page Header Length "+binPage.length);
+			
+			//TODO: Is the binary header using little endian or big endian ??
+			int magicNumber = IntField.getIntFromBinary(binPage, 0);
+			if(magicNumber != TABLE_DATA_PAGE_HEADER_MAGIC_NUMBER) 
+				throw new PageFormatException("Invalid Page Header Magic Number "+magicNumber);
+			
+			this.pageNumber = IntField.getIntFromBinary(binPage, 4);
+			this.numRecords = IntField.getIntFromBinary(binPage, 8);
+			this.recordWidth = IntField.getIntFromBinary(binPage, 12);
+			this.chunkOffset = IntField.getIntFromBinary(binPage, 16);
+		}
 	}
 
 	@Override
@@ -53,8 +102,7 @@ public class TablePageImpl implements TablePage{
 
 	@Override
 	public byte[] getBuffer() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.binPage;
 	}
 
 	@Override
@@ -66,14 +114,84 @@ public class TablePageImpl implements TablePage{
 	@Override
 	public int getNumRecordsOnPage() throws PageExpiredException {
 		if(isExpired) throw new PageExpiredException();
-		else return recordsNum;
+		else return numRecords;
 	}
+	
+	public static void encodeBigIntAsBinary(long value, byte[] buffer, int offset)
+    {
+	    buffer[offset]     = (byte) value;
+	    buffer[offset + 1] = (byte) (value >>> 8);
+	    buffer[offset + 2] = (byte) (value >>> 16);
+	    buffer[offset + 3] = (byte) (value >>> 24);
+	    buffer[offset + 4] = (byte) (value >>> 32);
+	    buffer[offset + 5] = (byte) (value >>> 40);
+	    buffer[offset + 6] = (byte) (value >>> 48);
+	    buffer[offset + 7] = (byte) (value >>> 56);
+    }
  
 	@Override
 	public boolean insertTuple(DataTuple tuple) throws PageFormatException,
 			PageExpiredException {
-		// TODO Auto-generated method stub
-		return false;
+
+		if(this.isExpired)
+			throw new PageExpiredException();
+		
+		int recordsEndPos = numRecords*recordWidth + 32;
+		if(this.chunkOffset <= recordsEndPos) 
+			throw new PageFormatException();
+
+
+		byte[] record = new byte[this.recordWidth];
+		IntField.encodeIntAsBinary(0, record, 0);	// set tombstone false
+		int recordOffset = 4;
+
+		int newChunkOffset = this.chunkOffset;
+		List<byte[]> varList = new LinkedList<byte[]>();
+		
+		//TODO: not sure if like this
+		for(int i = 0; (i < tuple.getNumberOfFields()); ++i) {
+			DataField field = tuple.getField(i);
+			BasicType type = field.getBasicType();
+			
+			if(type.isArrayType()) {
+				if(type.isFixLength()) {
+					//fixed length array, store the whole value
+					recordOffset += field.encodeBinary(record, recordOffset);
+				}
+				else {
+					//variable length array
+					int fieldLen = field.getNumberOfBytes();
+					newChunkOffset -= fieldLen;
+					
+					//TODO: encode big in !!!
+					long pointer = (fieldLen << 32) | newChunkOffset;	 
+					encodeBigIntAsBinary(pointer, record, recordOffset);
+					recordOffset += 8;
+					
+					byte[] encoded = new byte[fieldLen];
+					field.encodeBinary(encoded, 0);
+					varList.add(encoded);
+				}
+			}
+			else {
+				//fixed length non-array value
+				recordOffset += field.encodeBinary(record, recordOffset);
+			}
+		}
+		if(newChunkOffset < (recordsEndPos+recordWidth)) {
+			return false;	// not enough space
+		}
+		else {
+			//do the actual insertion
+			System.arraycopy(record, 0, binPage, recordsEndPos, record.length);
+			for(byte[] b : varList) {
+				this.chunkOffset -= b.length;
+				System.arraycopy(b, 0, binPage, this.chunkOffset, b.length);
+			}
+			this.numRecords ++;
+			this.isModified = true;
+		}
+		return true;
 	}
 
 	@Override
@@ -82,13 +200,77 @@ public class TablePageImpl implements TablePage{
 		// TODO Auto-generated method stub
 		
 	}
-
+	
 	@Override
 	public DataTuple getDataTuple(int position, long columnBitmap, int numCols)
 			throws PageTupleAccessException, PageExpiredException {
-		// TODO Auto-generated method stub
-		return null;
+		
+		if(this.isExpired)
+			throw new PageExpiredException();
+		
+		if(position >= this.numRecords)
+			throw new PageTupleAccessException(position);
+		
+		int recordOffset = 32 + position*recordWidth;
+		
+		//TODO: direct visit byte if endian known
+		int metadata = IntField.getIntFromBinary(binPage, recordOffset);
+		if((metadata & 0x01) == 1) {
+			return null;
+		}
+		
+		if(numCols > schema.getNumberOfColumns()) {
+			//TODO: what to do with this situation ??
+			return null;
+		}
+		
+		DataTuple result = new DataTuple(numCols);
+		
+		recordOffset += 4;	//skip metadata
+		
+		int addedCols = 0;
+		int schemaColIndex = 0;
+		for ( ; addedCols < numCols && (columnBitmap != 0) && (schemaColIndex < schema.getNumberOfColumns()); columnBitmap >>>= 1, schemaColIndex++) {
+			if ((columnBitmap & 0x1) == 0) {
+				continue;
+			}
+			
+			DataType dataType = this.schema.getColumn(schemaColIndex).getDataType();
+			DataField field = null;
+			
+			if(dataType.isArrayType()) {
+				if(dataType.isFixLength()) {
+					//TODO: treat as fixed or variable ?? now as fixed
+					int len = dataType.getNumberOfBytes() * dataType.getLength();
+					
+					field = dataType.getFromBinary(binPage, recordOffset, len);
+					recordOffset += len;
+
+				}
+				else {
+					//variable length value, 8 byte pointer
+					BigIntField pointer = BigIntField.getFieldFromBinary(binPage, recordOffset);
+					int low = (int) (pointer.getValue() & 0x00000000ffffffff);	//offset to field on the page
+					int high = (int) (pointer.getValue() >>> 32);				//length of the field
+					
+					field = dataType.getFromBinary(binPage, low, high);
+					recordOffset += 8;
+				}
+			}
+			else {
+				//a fixed length value
+				field = dataType.getFromBinary(binPage, recordOffset);
+				recordOffset += dataType.getNumberOfBytes();
+			}
+
+			//TODO: like this or the same as column bitmap ??
+			result.assignDataField(field, addedCols);
+			addedCols++;
+		}
+		
+		return result;
 	}
+	
 
 	@Override
 	public DataTuple getDataTuple(LowLevelPredicate[] preds, int position,
