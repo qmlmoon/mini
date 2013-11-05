@@ -245,21 +245,24 @@ public class TablePageImpl implements TablePage{
 		if(isExpired)
 			throw new PageExpiredException();
 		
-		if(position >= numRecords)
+		if(position >= numRecords){
+			System.out.println("position: " + position);
+			System.out.println("numRecords: " + numRecords);
 			throw new PageTupleAccessException(position);
+		}
 		
 
 		int recordOffset = TABLE_DATA_PAGE_HEADER_BYTES + position*recordWidth;
 		
 		int metadata = IntField.getIntFromBinary(binPage, recordOffset);
-		metadata &= 0xfffffffe;
+		metadata |= 0x00000001;
 		IntField.encodeIntAsBinary(metadata, binPage, recordOffset);
 		
 		//TODO: remove variable length data??
 		
-		numRecords--;
+		//numRecords--;
 		isModified = true;
-		updatePageHeader();
+		//updatePageHeader(); //dont need to update header, just mark it as deleted
 	}
 	
 	@Override
@@ -292,14 +295,22 @@ public class TablePageImpl implements TablePage{
 		
 		int addedCols = 0;
 		int schemaColIndex = 0;
+		int colNo = 0;
 		for ( ; (addedCols < numCols) && (columnBitmap != 0) && (schemaColIndex < schema.getNumberOfColumns()); 
-				columnBitmap >>>= 1, schemaColIndex++) {
-			if ((columnBitmap & 0x1) == 0) {
-				continue;
-			}
+				columnBitmap >>>= 1, schemaColIndex++, colNo++) {
 			
 			DataType dataType = schema.getColumn(schemaColIndex).getDataType();
 			DataField field = null;
+			
+			if ((columnBitmap & 0x00000001) == 0x0) {
+				if(!dataType.isFixLength()){
+					recordOffset += 8;
+				}
+				else{
+					recordOffset += dataType.getNumberOfBytes();
+				}
+				continue;
+			}
 			
 			if(dataType.isArrayType()) {
 				if(dataType.isFixLength()) {
@@ -328,9 +339,9 @@ public class TablePageImpl implements TablePage{
 			else {
 				//a fixed length value
 				field = dataType.getFromBinary(binPage, recordOffset);
-				recordOffset += field.getNumberOfBytes();
+				recordOffset += dataType.getNumberOfBytes();
 			}
-			System.out.println("fetch "+field.getNumberOfBytes()+" bytes before recordOffset "+recordOffset+" with value "+field.toString());
+			System.out.println("colNo." + colNo + " fetch " +field.getNumberOfBytes()+" bytes before recordOffset "+recordOffset+" with value "+field.toString());
 
 			//TODO: like this or the same as column bitmap ??
 			result.assignDataField(field, addedCols);
@@ -347,21 +358,21 @@ public class TablePageImpl implements TablePage{
 			long columnBitmap, int numCols) throws PageTupleAccessException,
 			PageExpiredException {
 		
-		DataTuple tuple = getDataTuple(position, columnBitmap, numCols);
+		DataTuple tuple = getDataTuple(position, Long.MAX_VALUE, schema.getNumberOfColumns());
 		
 		if(tuple == null)
 			return null;
 		
-		try {
-			for (LowLevelPredicate pred : preds) {
-				if (!pred.evaluate(tuple)) 
+		for (LowLevelPredicate pred : preds) {
+			try {
+				if(!pred.evaluate(tuple)){
 					return null;
-			}
-		} catch (QueryExecutionException e) {
-			return null;
+				}
+			} catch (QueryExecutionException e) {
+				return null;
+			}			
 		}
-		
-		return tuple;
+		return getDataTuple(position, columnBitmap, numCols);
 	}
 
 	@Override
