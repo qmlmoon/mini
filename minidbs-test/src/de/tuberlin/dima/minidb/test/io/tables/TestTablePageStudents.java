@@ -355,7 +355,6 @@ public class TestTablePageStudents
 				page = AbstractExtensionFactory.getExtensionFactory().createTablePage(schema, binPage);
 				assertFalse("Page must not have been modified, yet", page.hasBeenModified());
 				assertTrue("Record count is wrong." , list.size() == page.getNumRecordsOnPage());
-				System.out.println("sni" + sni);
 				// iterate over the page and check every second tuple
 				TupleIterator iter = page.getIterator(numCols, Long.MAX_VALUE);
 				for (int i = 0; i < list.size(); i++) {

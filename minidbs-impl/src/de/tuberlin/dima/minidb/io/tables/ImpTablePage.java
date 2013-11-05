@@ -134,13 +134,15 @@ public class ImpTablePage implements TablePage {
 					else {
 						int length = field.getNumberOfBytes();
 						int start = this.variableLegnthChunkOffset - length;
-						
 						if (start < 32 + (this.numRecordsOnPage + 1) * this.recordWidth)
 							return false;
 						
+						if (field.isNULL())
+							length = -1;
 						IntField.encodeIntAsBinary(start, buff, offset);
 						IntField.encodeIntAsBinary(length, buff, offset + 4);
 						field.encodeBinary(buff, start);
+					
 						this.variableLegnthChunkOffset = start;
 						offset +=8;
 					}
@@ -192,6 +194,8 @@ public class ImpTablePage implements TablePage {
 		case VAR_CHAR:
 			int start = IntField.getIntFromBinary(this.buff, offset);
 			int length = IntField.getIntFromBinary(this.buff, offset + 4);
+			if (length == -1)
+				return DataType.varcharType(0).getNullValue();
 			return VarcharField.getFieldFromBinary(this.buff, start, length);
 		case RID:
 			return RID.getRidFromBinary(this.buff, offset);

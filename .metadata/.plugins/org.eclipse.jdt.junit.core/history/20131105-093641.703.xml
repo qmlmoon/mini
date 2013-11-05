@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?><testrun name="TestTablePageStudents" project="minidbs-test" tests="8" started="8" failures="0" errors="0" ignored="0">
+  <testsuite name="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.819">
+    <testcase name="testExceptions" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.163"/>
+    <testcase name="testRetrievalWithProjectionAndPredicates" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.12"/>
+    <testcase name="testIterators" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.147"/>
+    <testcase name="testRetrievalWithPredicates" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.026"/>
+    <testcase name="testRetrievalWithProjection" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.139"/>
+    <testcase name="testIteratorWithPredicates" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.04"/>
+    <testcase name="testExpirationOfEntries" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.018"/>
+    <testcase name="testRetrievalOfFullTuples" classname="de.tuberlin.dima.minidb.test.io.tables.TestTablePageStudents" time="0.165"/>
+  </testsuite>
+</testrun>
