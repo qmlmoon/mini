@@ -16,7 +16,6 @@ import de.tuberlin.dima.minidb.parser.ParseException;
 import de.tuberlin.dima.minidb.parser.ParsedQuery;
 import de.tuberlin.dima.minidb.parser.SQLParser;
 import de.tuberlin.dima.minidb.parser.SelectQuery;
-import de.tuberlin.dima.minidb.parser.solution.SQLParserImpl;
 import de.tuberlin.dima.minidb.qexec.PhysicalPlanOperator;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 import de.tuberlin.dima.minidb.qexec.heap.QueryHeap;
@@ -60,6 +59,7 @@ public class QueryProcessor
 	 * logic are maintained for historical reasons. The current physical  
 	 * operator implementation does not use epochs.  
 	 */
+	@SuppressWarnings("unused")
 	private final AtomicInteger currentReadEpoch;
 		
 	/**
@@ -105,7 +105,7 @@ public class QueryProcessor
 		
 		ParsedQuery parsedQuery = null;
 		try {
-			SQLParser parser = new SQLParserImpl(queryString);
+			SQLParser parser = AbstractExtensionFactory.getExtensionFactory().getParser(queryString);
 			parsedQuery = parser.parse();
 		}
 		catch (ParseException pex) {
@@ -187,8 +187,6 @@ public class QueryProcessor
 		 *
 		 * Here, the best plan is executed.
 		 * ******************************************************/
-	    
-	    int currentWeb = this.currentReadEpoch.get();
 	    
 	    try {
 	    	executablePlan.open(null);

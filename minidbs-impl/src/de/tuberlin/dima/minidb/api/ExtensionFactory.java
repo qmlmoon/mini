@@ -20,6 +20,7 @@ import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
 import de.tuberlin.dima.minidb.optimizer.joins.JoinOrderOptimizer;
 import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
+import de.tuberlin.dima.minidb.parser.SQLParser;
 import de.tuberlin.dima.minidb.qexec.DeleteOperator;
 import de.tuberlin.dima.minidb.qexec.FetchOperator;
 import de.tuberlin.dima.minidb.qexec.FilterCorrelatedOperator;
@@ -38,8 +39,19 @@ import de.tuberlin.dima.minidb.qexec.TableScanOperator;
 import de.tuberlin.dima.minidb.qexec.heap.QueryHeap;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
+import de.tuberlin.dima.minidb.semantics.SelectQueryAnalyzer;
 
 public class ExtensionFactory extends AbstractExtensionFactory {
+
+	@Override
+	public SQLParser getParser(String sqlStatement) {
+		throw new UnsupportedOperationException("Method not yet supported");
+	}
+
+	@Override
+	public SelectQueryAnalyzer createSelectQueryAnalyzer() {
+		throw new UnsupportedOperationException("Method not yet supported");
+	}
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
