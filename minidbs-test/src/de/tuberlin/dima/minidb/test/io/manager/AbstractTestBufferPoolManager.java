@@ -1,6 +1,6 @@
-package de.tuberlin.dima.minidb.test.io;
+package de.tuberlin.dima.minidb.test.io.manager;
 
-import de.tuberlin.dima.minidb.io.BufferPoolManager;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 
 public class AbstractTestBufferPoolManager {
 

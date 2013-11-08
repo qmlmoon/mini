@@ -21,12 +21,12 @@ import de.tuberlin.dima.minidb.catalogue.ColumnSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.core.IntField;
-import de.tuberlin.dima.minidb.io.PageSize;
 import de.tuberlin.dima.minidb.io.cache.CachePinnedException;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
 import de.tuberlin.dima.minidb.io.cache.DuplicateCacheEntryException;
 import de.tuberlin.dima.minidb.io.cache.EvictedCacheEntry;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
 
 
 /**

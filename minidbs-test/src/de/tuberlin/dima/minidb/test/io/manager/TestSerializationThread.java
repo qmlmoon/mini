@@ -1,4 +1,4 @@
-package de.tuberlin.dima.minidb.test.io;
+package de.tuberlin.dima.minidb.test.io.manager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Random;
 
 import de.tuberlin.dima.minidb.core.IntField;
-import de.tuberlin.dima.minidb.io.BufferPoolException;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolException;
 
 /**
  * A thread testing the serialization by arbitrarily addressing 

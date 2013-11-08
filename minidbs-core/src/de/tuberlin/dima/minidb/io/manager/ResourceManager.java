@@ -1,9 +1,11 @@
-package de.tuberlin.dima.minidb.io;
+package de.tuberlin.dima.minidb.io.manager;
 
 
 import java.io.IOException;
 
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
 
 
 /**

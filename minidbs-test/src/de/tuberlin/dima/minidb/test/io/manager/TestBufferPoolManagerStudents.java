@@ -1,4 +1,4 @@
-package de.tuberlin.dima.minidb.test.io;
+package de.tuberlin.dima.minidb.test.io.manager;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -36,12 +36,12 @@ import de.tuberlin.dima.minidb.core.SmallIntField;
 import de.tuberlin.dima.minidb.core.TimeField;
 import de.tuberlin.dima.minidb.core.TimestampField;
 import de.tuberlin.dima.minidb.core.VarcharField;
-import de.tuberlin.dima.minidb.io.BufferPoolException;
-import de.tuberlin.dima.minidb.io.PageExpiredException;
-import de.tuberlin.dima.minidb.io.PageFormatException;
-import de.tuberlin.dima.minidb.io.PageSize;
-import de.tuberlin.dima.minidb.io.ResourceManager;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.cache.PageExpiredException;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolException;
+import de.tuberlin.dima.minidb.io.manager.ResourceManager;
 import de.tuberlin.dima.minidb.io.tables.PageTupleAccessException;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 

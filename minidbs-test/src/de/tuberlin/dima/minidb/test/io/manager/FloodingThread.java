@@ -1,10 +1,10 @@
-package de.tuberlin.dima.minidb.test.io;
+package de.tuberlin.dima.minidb.test.io.manager;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
-import de.tuberlin.dima.minidb.io.BufferPoolException;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolException;
 
 /**
  * Class flooding the buffer pool manager with arbitrary

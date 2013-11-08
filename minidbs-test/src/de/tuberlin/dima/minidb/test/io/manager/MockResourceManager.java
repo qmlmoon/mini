@@ -1,4 +1,4 @@
-package de.tuberlin.dima.minidb.test.io;
+package de.tuberlin.dima.minidb.test.io.manager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,10 +6,10 @@ import java.util.LinkedList;
 
 import de.tuberlin.dima.minidb.api.AbstractExtensionFactory;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
-import de.tuberlin.dima.minidb.io.PageFormatException;
-import de.tuberlin.dima.minidb.io.PageSize;
-import de.tuberlin.dima.minidb.io.ResourceManager;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.manager.ResourceManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 
 /**

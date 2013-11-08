@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import de.tuberlin.dima.minidb.api.AbstractExtensionFactory;
 import de.tuberlin.dima.minidb.catalogue.Catalogue;
 import de.tuberlin.dima.minidb.core.DataTuple;
-import de.tuberlin.dima.minidb.io.BufferPoolManager;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.optimizer.Optimizer;
 import de.tuberlin.dima.minidb.optimizer.OptimizerException;
 import de.tuberlin.dima.minidb.optimizer.OptimizerPlanOperator;
