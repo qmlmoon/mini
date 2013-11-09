@@ -15,11 +15,11 @@ import java.nio.channels.OverlappingFileLockException;
 import de.tuberlin.dima.minidb.catalogue.IndexSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.InternalOperationFailure;
-import de.tuberlin.dima.minidb.io.PageFormatException;
-import de.tuberlin.dima.minidb.io.PageSize;
-import de.tuberlin.dima.minidb.io.ResourceManager;
-import de.tuberlin.dima.minidb.io.UnsupportedPageSizeException;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.cache.UnsupportedPageSizeException;
+import de.tuberlin.dima.minidb.io.manager.ResourceManager;
 
 
 /**

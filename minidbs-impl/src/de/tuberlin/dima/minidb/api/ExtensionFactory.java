@@ -8,11 +8,11 @@ import de.tuberlin.dima.minidb.catalogue.IndexSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataType;
-import de.tuberlin.dima.minidb.io.BufferPoolManager;
-import de.tuberlin.dima.minidb.io.PageFormatException;
-import de.tuberlin.dima.minidb.io.PageSize;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
+import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TablePageImpl;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
@@ -21,6 +21,7 @@ import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
 import de.tuberlin.dima.minidb.optimizer.joins.JoinOrderOptimizer;
 import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
+import de.tuberlin.dima.minidb.parser.SQLParser;
 import de.tuberlin.dima.minidb.qexec.DeleteOperator;
 import de.tuberlin.dima.minidb.qexec.FetchOperator;
 import de.tuberlin.dima.minidb.qexec.FilterCorrelatedOperator;
@@ -39,6 +40,7 @@ import de.tuberlin.dima.minidb.qexec.TableScanOperator;
 import de.tuberlin.dima.minidb.qexec.heap.QueryHeap;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
+import de.tuberlin.dima.minidb.semantics.SelectQueryAnalyzer;
 
 /**
  * Exercise 1
@@ -47,6 +49,11 @@ import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
  *
  */
 public class ExtensionFactory extends AbstractExtensionFactory {
+
+	@Override
+	public SelectQueryAnalyzer createSelectQueryAnalyzer() {
+		throw new UnsupportedOperationException("Method not yet supported");
+	}
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
@@ -170,5 +177,13 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 	@Override
 	public PhysicalPlanGenerator createPhysicalPlanGenerator(Catalogue catalogue, CardinalityEstimator cardEstimator, CostEstimator costEstimator) {
 		throw new UnsupportedOperationException("Method not yet supported");
+	}
+
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.minidb.api.AbstractExtensionFactory#getParser(java.lang.String)
+	 */
+	@Override
+	public SQLParser getParser(String sqlStatement) {
+		return null;
 	}
 }

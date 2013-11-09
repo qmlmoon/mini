@@ -17,10 +17,10 @@ import de.tuberlin.dima.minidb.catalogue.ColumnSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.BasicType;
 import de.tuberlin.dima.minidb.core.DataType;
-import de.tuberlin.dima.minidb.io.PageFormatException;
-import de.tuberlin.dima.minidb.io.PageSize;
-import de.tuberlin.dima.minidb.io.ResourceManager;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.manager.ResourceManager;
 
 
 /**
