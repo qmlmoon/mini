@@ -21,12 +21,11 @@ public class DoubleLinkedList {
 		this.pinned = pinn;
 	}
 	
-	public DoubleLinkedList(int PageNum, int resourceID, boolean pinn) {
+	public DoubleLinkedList(int PageNum, int resourceID) {
 		this.prev = null;
 		this.next = null;
 		this.pageNumber = PageNum;
 		this.resourceId = resourceID;
-		this.pinned = pinn;
 	}
 	
 	public void addPrev(DoubleLinkedList pre) {
@@ -63,5 +62,9 @@ public class DoubleLinkedList {
 	
 	public void unPinn() {
 		this.pinned = false;
+	}
+	
+	public boolean isPinned() {
+		return this.pinned;
 	}
 }

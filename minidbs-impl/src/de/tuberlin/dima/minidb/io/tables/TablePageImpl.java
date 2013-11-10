@@ -8,8 +8,8 @@ import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.core.IntField;
 import de.tuberlin.dima.minidb.core.RID;
-import de.tuberlin.dima.minidb.io.PageExpiredException;
-import de.tuberlin.dima.minidb.io.PageFormatException;
+import de.tuberlin.dima.minidb.io.cache.PageExpiredException;
+import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 
