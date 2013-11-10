@@ -9,6 +9,7 @@ import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
+import de.tuberlin.dima.minidb.io.cache.PageCacheImpl;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
@@ -69,7 +70,8 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		PageCacheImpl pc = new PageCacheImpl(pageSize.getNumberOfBytes(), numPages);
+		return pc;
 	}
 
 	@Override

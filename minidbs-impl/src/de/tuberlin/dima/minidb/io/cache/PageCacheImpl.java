@@ -8,6 +8,16 @@ public class PageCacheImpl implements PageCache {
 	
 	private int p, c;
 	
+	private int pageSize;
+	
+	public PageCacheImpl(int pagesize, int pageNum) {
+		this.p = 0;
+		this.c = pageNum;
+		this.pageSize = pagesize;
+		T1_head = T2_head = B1_head = B2_head = T1_tail = T2_tail = B1_tail = B2_tail = null;
+		T1_length = T2_length = B1_length = B2_length;
+	}
+	
 	@Override
 	public CacheableData getPage(int resourceId, int pageNumber) {
 		DoubleLinkedList tmp = T1_head;
@@ -23,9 +33,13 @@ public class PageCacheImpl implements PageCache {
 						T1_tail = tmp.getPrev();
 				}
 				T1_length--;
-				T2_head.addPrev(tmp);
-				tmp.addNext(T2_head);
-				T2_head = tmp;
+				if (T2_length != 0) {
+					T2_head.addPrev(tmp);
+					tmp.addNext(T2_head);
+					T2_head = tmp;
+				}
+				else
+					T2_head = T2_tail = tmp;
 				T2_length++;
 				return tmp.getCacheableData();
 			}
@@ -73,9 +87,13 @@ public class PageCacheImpl implements PageCache {
 						T1_tail = tmp.getPrev();
 				}
 				T1_length--;
-				T2_head.addPrev(tmp);
-				tmp.addNext(T2_head);
-				T2_head = tmp;
+				if (T2_length != 0) {
+					T2_head.addPrev(tmp);
+					tmp.addNext(T2_head);
+					T2_head = tmp;
+				}
+				else
+					T2_head = T2_tail = tmp;
 				T2_length++;
 				tmp.addPinn();
 				return tmp.getCacheableData();
@@ -304,6 +322,10 @@ public class PageCacheImpl implements PageCache {
 		else
 			T1_head = T1_tail = t;
 		T1_length++;
+		if (ece == null) {
+			byte [] x = new byte[this.pageSize];
+			ece = new EvictedCacheEntry(x,null,-1);
+		}
 		return ece;
 	}
 
@@ -427,6 +449,10 @@ public class PageCacheImpl implements PageCache {
 		else
 			T1_head = T1_tail = t;
 		T1_length++;
+		if (ece == null) {
+			byte [] x = new byte[this.pageSize];
+			ece = new EvictedCacheEntry(x,null,-1);
+		}
 		return ece;
 	}
 
@@ -450,8 +476,23 @@ public class PageCacheImpl implements PageCache {
 
 	@Override
 	public CacheableData[] getAllPagesForResource(int resourceId) {
-		// TODO Auto-generated method stub
-		return null;
+		CacheableData[] cad;
+		cad = new CacheableData[c];
+		int length = 0;
+		DoubleLinkedList tmp = T1_head;
+		while (tmp != null) {
+			if (tmp.getResourceId() == resourceId) 
+				cad[length++] = this.getPage(resourceId, tmp.getPageNumber());
+			tmp = tmp.getNext();
+		}
+		tmp = T2_head;
+		while (tmp != null) {
+			if (tmp.getResourceId() == resourceId) 
+				cad[length++] = this.getPage(resourceId, tmp.getPageNumber());
+			tmp = tmp.getNext();
+		}
+		
+		return cad;
 	}
 
 	@Override
