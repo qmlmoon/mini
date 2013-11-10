@@ -150,7 +150,7 @@ public class PageCacheImpl implements PageCache {
 				}
 				T1_length--;
 				B1_length++;
-				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), resourceId);
+				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), iter.getResourceId());
 				if (B1_head != null) {
 					B1_head.addPrev(tt);
 					tt.addNext(B1_head);
@@ -159,7 +159,7 @@ public class PageCacheImpl implements PageCache {
 				else {
 					B1_head = B1_tail = tt;
 				}
-				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), resourceId);
+				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), iter.getResourceId());
 				return tmp;
 			}
 		}
@@ -184,7 +184,7 @@ public class PageCacheImpl implements PageCache {
 				}
 				T2_length--;
 				B2_length++;
-				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), resourceId);
+				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), iter.getResourceId());
 				if (B2_head != null) {
 					B2_head.addPrev(tt);
 					tt.addNext(B2_head);
@@ -193,7 +193,7 @@ public class PageCacheImpl implements PageCache {
 				else {
 					B2_head = B2_tail = tt;
 				}
-				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), resourceId);
+				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), iter.getResourceId());
 				return tmp;
 			}
 			else
