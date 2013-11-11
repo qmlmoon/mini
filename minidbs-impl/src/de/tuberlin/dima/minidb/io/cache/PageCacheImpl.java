@@ -25,7 +25,7 @@ public class PageCacheImpl implements PageCache {
 		this.pageSize = pageSize;
 		this.numPages = numPages;
 		this.p = DEFAULT_P;//numPages/2;
-		
+
 		this.buffers = new byte[numPages][pageSize.getNumberOfBytes()];
 		
 		this.t1 = new LinkedList<CacheEntry>();
