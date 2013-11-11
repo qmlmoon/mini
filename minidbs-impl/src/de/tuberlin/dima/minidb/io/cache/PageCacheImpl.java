@@ -1,525 +1,462 @@
 package de.tuberlin.dima.minidb.io.cache;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import de.tuberlin.dima.minidb.util.Pair;
+
 public class PageCacheImpl implements PageCache {
 
-	private DoubleLinkedList T1_head, T1_tail, T2_head, T2_tail, B1_head, B1_tail, B2_head, B2_tail;
+	private PageSize pageSize;
+	private int numPages;
 	
-	private int T1_length, T2_length, B1_length, B2_length;
+	byte[][] buffers;
+	int bufferCount = 0;
 	
-	private int p, c;
+	private int p;
+	private static final int DEFAULT_P = 0;
 	
-	private int pageSize;
+	private LinkedList<CacheEntry> t1,t2;
+	private LinkedList<Pair<Integer,Integer>> b1,b2;
 	
-	public PageCacheImpl(int pagesize, int pageNum) {
-		this.p = 0;
-		this.c = pageNum;
-		this.pageSize = pagesize;
-		T1_head = T2_head = B1_head = B2_head = T1_tail = T2_tail = B1_tail = B2_tail = null;
-		T1_length = T2_length = B1_length = B2_length;
+	int expellCountT1 = 0, expellCountT2 = 0;
+	
+	public PageCacheImpl(PageSize pageSize, int numPages) {
+		this.pageSize = pageSize;
+		this.numPages = numPages;
+		this.p = DEFAULT_P;//numPages/2;
+		
+		this.buffers = new byte[numPages][pageSize.getNumberOfBytes()];
+		
+		this.t1 = new LinkedList<CacheEntry>();
+		this.t2 = new LinkedList<CacheEntry>();
+		
+		//fill T1 and T2 with empty page entries
+		/*int i;
+		for(i=0; i<p; ++i) {
+			t1.add(new CacheEntry(buffers[i], null, -1));
+		}
+		for(; i< numPages; ++i) {
+			t2.add(new CacheEntry(buffers[i], null, -1));
+		}*/
+		
+		this.b1 = new LinkedList<Pair<Integer,Integer>>();
+		this.b2 = new LinkedList<Pair<Integer,Integer>>();
 	}
 	
 	@Override
 	public CacheableData getPage(int resourceId, int pageNumber) {
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId && tmp.getPageNumber()== pageNumber) {
-				if (tmp == T1_head) 
-					T1_head = tmp.getNext();
-				else {
-					tmp.getPrev().addNext(tmp.getNext());
-					if (tmp != T1_tail)
-						tmp.getNext().addPrev(tmp.getPrev());
-					else
-						T1_tail = tmp.getPrev();
-				}
-				T1_length--;
-				if (T2_length != 0) {
-					T2_head.addPrev(tmp);
-					tmp.addNext(T2_head);
-					T2_head = tmp;
-				}
-				else
-					T2_head = T2_tail = tmp;
-				T2_length++;
-				return tmp.getCacheableData();
+		
+		for(CacheEntry itr : t2) {
+			if(!itr.isExpelled() && itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				itr.increaseHit();
+				t2.remove(itr);
+				t2.addFirst(itr);
+				return itr.getWrappingPage();
 			}
-			tmp = tmp.getNext();
 		}
 		
-		
-	    tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId && tmp.getPageNumber()== pageNumber) {
-				if (tmp != T2_head) {
-					tmp.getPrev().addNext(tmp.getNext());
-					if (tmp != T2_tail)
-						tmp.getNext().addPrev(tmp.getPrev());
-					else 
-						T2_tail = tmp.getPrev();
-					T2_head.addPrev(tmp);
-					tmp.addNext(T2_head);
-					T2_head = tmp;
+		for(CacheEntry itr : t1) {
+			if(!itr.isExpelled() && itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				if(itr.increaseHit() > 1) {
+					t1.remove(itr);
+					t2.addFirst(itr);
 				}
-				
-				return tmp.getCacheableData();
+				return itr.getWrappingPage();
 			}
-			tmp = tmp.getNext();
 		}
 		
-		//TODO how to get the cacheableData if this page is missing in cache
-		//addPage();
+		//TODO: update p here or not ???
+/*		for(Pair<Integer,Integer> itr : b1) {
+			if(itr.getFirst() == resourceId && itr.getSecond() == pageNumber) {
+				int sigma = b1.size() >= b2.size() ? 1 : b2.size()/b1.size();
+				p = p+sigma > numPages ? numPages : p+sigma;
+				return null;
+			}
+		}
 		
+		for(Pair<Integer,Integer> itr : b2) {
+			if(itr.getFirst() == resourceId && itr.getSecond() == pageNumber) {
+				int sigma = b2.size() >= b1.size() ? 1 : b1.size()/b2.size();
+				p -= sigma;
+				if(p<0) p=0;
+				return null;
+			}
+		}
+		*/
 		return null;
 	}
 
 	@Override
 	public CacheableData getPageAndPin(int resourceId, int pageNumber) {
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId && tmp.getPageNumber()== pageNumber) {
-				if (tmp == T1_head) 
-					T1_head = tmp.getNext();
-				else {
-					tmp.getPrev().addNext(tmp.getNext());
-					if (tmp != T1_tail)
-						tmp.getNext().addPrev(tmp.getPrev());
-					else
-						T1_tail = tmp.getPrev();
-				}
-				T1_length--;
-				if (T2_length != 0) {
-					T2_head.addPrev(tmp);
-					tmp.addNext(T2_head);
-					T2_head = tmp;
-				}
-				else
-					T2_head = T2_tail = tmp;
-				T2_length++;
-				tmp.addPinn();
-				return tmp.getCacheableData();
+		
+		for(CacheEntry itr : t2) {
+			if(!itr.isExpelled() && itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				itr.increaseHit();
+				t2.remove(itr);
+				t2.addFirst(itr);
+				itr.increasePinned(); 
+				return itr.getWrappingPage();
 			}
-			tmp = tmp.getNext();
 		}
 		
-		
-	    tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId && tmp.getPageNumber()== pageNumber) {
-				if (tmp != T2_head) {
-					tmp.getPrev().addNext(tmp.getNext());
-					if (tmp != T2_tail)
-						tmp.getNext().addPrev(tmp.getPrev());
-					else 
-						T2_tail = tmp.getPrev();
-					T2_head.addPrev(tmp);
-					tmp.addNext(T2_head);
-					T2_head = tmp;
+		for(CacheEntry itr : t1) {
+			if(!itr.isExpelled() && itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				if(itr.increaseHit() > 1) {
+					t1.remove(itr);
+					t2.addFirst(itr);
 				}
-				
-				tmp.addPinn();
-				return tmp.getCacheableData();
+				itr.increasePinned(); 
+				return itr.getWrappingPage();
 			}
-			tmp = tmp.getNext();
 		}
-		//TODO how to get the cacheableData if this page is missing in cache
-		//addPage();
 		
+		//TODO: update p here or not ???
+/*		for(Pair<Integer,Integer> itr : b1) {
+			if(itr.getFirst() == resourceId && itr.getSecond() == pageNumber) {
+				int sigma = b1.size() >= b2.size() ? 1 : b2.size()/b1.size();
+				p = p+sigma > numPages ? numPages : p+sigma;
+				return null;
+			}
+		}
+		
+		for(Pair<Integer,Integer> itr : b2) {
+			if(itr.getFirst() == resourceId && itr.getSecond() == pageNumber) {
+				int sigma = b2.size() >= b1.size() ? 1 : b1.size()/b2.size();
+				p -= sigma;
+				if(p<0) p=0;
+				return null;
+			}
+		}
+		*/
 		return null;
 
 	}
-
-	public EvictedCacheEntry subroutine_replace(CacheableData newPage, int resourceId, boolean in_B2)
-		throws CachePinnedException, DuplicateCacheEntryException {
-		//remove entry in T1
-		if (T1_length != 0 && (T1_length > p || (T1_length == p && in_B2))) {
+	
+	private EvictedCacheEntry evictFromList(int listNumber) throws CachePinnedException {
+		CacheEntry evict = null;
+		Iterator<CacheEntry> itr = null;
+		LinkedList<CacheEntry> l1=null, l2=null;
 		
-			DoubleLinkedList iter = T1_tail;
-			while (iter != null && iter.isPinned())
-				iter = iter.getPrev();
-			if (iter != null) {
-				if (iter != T1_head) {
-					iter.getPrev().addNext(iter.getNext());
-					if (iter != T1_tail)
-						iter.getNext().addPrev(iter.getPrev());
-					else
-						T1_tail = iter.getPrev();
+		//remove expelled entry first
+		if(expellCountT1 > 0) {
+			itr = t1.descendingIterator();
+			while(itr.hasNext()) {
+				evict = itr.next();
+				if(evict.isExpelled()) {
+					itr.remove();
+					expellCountT1--;
+					return evict;
 				}
-				else {
-					T1_head = iter.getNext();
-					T1_head.addPrev(null);
+			}
+			
+		}
+		else if(expellCountT2 > 0) {
+			itr = t2.descendingIterator();
+			while(itr.hasNext()) {
+				evict = itr.next();
+				if(evict.isExpelled()) {
+					itr.remove();
+					expellCountT2--;
+					return evict;
 				}
-				T1_length--;
-				B1_length++;
-				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), iter.getResourceId());
-				if (B1_head != null) {
-					B1_head.addPrev(tt);
-					tt.addNext(B1_head);
-					B1_head = tt;
-				}
-				else {
-					B1_head = B1_tail = tt;
-				}
-				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), iter.getResourceId());
-				return tmp;
 			}
 		}
 		
+		if(listNumber == 1) {	
+			l1 = t1;
+			l2 = t2;
+		}
+		else if(listNumber == 2) {
+			l1 = t2;
+			l2 = t1;
+		}
 		
-		//remove entry in T2
-		
-			DoubleLinkedList iter = T2_tail;
-			while (iter != null && iter.isPinned())
-				iter = iter.getPrev();
-			if (iter != null) {
-				if (iter != T2_head) {
-					iter.getPrev().addNext(iter.getNext());
-					if (iter != T2_tail)
-						iter.getNext().addPrev(iter.getPrev());
-					else
-						T2_tail = iter.getPrev();
-				}
-				else {
-					T2_head = iter.getNext();
-					T2_head.addPrev(null);
-				}
-				T2_length--;
-				B2_length++;
-				DoubleLinkedList tt = new DoubleLinkedList(iter.getCacheableData().getPageNumber(), iter.getResourceId());
-				if (B2_head != null) {
-					B2_head.addPrev(tt);
-					tt.addNext(B2_head);
-					B2_head = tt;
-				}
-				else {
-					B2_head = B2_tail = tt;
-				}
-				EvictedCacheEntry tmp = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), iter.getResourceId());
-				return tmp;
+		if(!l1.isEmpty()) {
+			if(l1.peekLast().isExpelled()) {
+				return l1.removeLast();
 			}
-			else
-				throw new CachePinnedException();
+			//check unpinned page
+			itr = l1.descendingIterator();
+			while(itr.hasNext()) {
+				evict = itr.next();
+				if(!evict.isPinned()) {
+					itr.remove();
+					return evict;
+				}
+			}
+		} 
+		else {
+			return null;
+		}
 		
+		//if T1 is empty or no more unpinned page exists, then evict a page in T2
+		if(!l2.isEmpty()) {
+			//remove expelled entry first
+			if(l2.peekLast().isExpelled()) {
+				return l2.removeLast();
+			}
+			itr = l2.descendingIterator();
+			while(itr.hasNext()) {
+				evict = itr.next();
+				if(!evict.isPinned()) {
+					itr.remove();
+					return evict;
+				}
+			}
+		}
+		
+		throw new CachePinnedException();
 	}
 	
+	private EvictedCacheEntry subroutine_replace(boolean in_B2) 
+			throws CachePinnedException,DuplicateCacheEntryException {
+
+		EvictedCacheEntry evict = null;
+
+		// subroutine replace
+		if (!t1.isEmpty() && ((t1.size() > p) || (t1.size() == p && in_B2))) {
+			// delete the LRU page in T1 and add it to MRU of B1
+			evict = evictFromList(1);// t1.removeLast();
+			b1.addFirst(new Pair<Integer, Integer>(evict.getResourceID(), evict
+					.getPageNumber()));
+		} else {
+			// delete the LRU page in T2 and add it to MRU of B2
+			evict = evictFromList(2);// t2.removeLast();
+			b2.addFirst(new Pair<Integer, Integer>(evict.getResourceID(), evict
+					.getPageNumber()));
+		}
+		return evict;
+	}
 	
 	@Override
 	public EvictedCacheEntry addPage(CacheableData newPage, int resourceId)
 			throws CachePinnedException, DuplicateCacheEntryException {
-	
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId)
-				throw new DuplicateCacheEntryException(newPage.getPageNumber(), resourceId);
-			tmp = tmp.getNext();
-		}
+		EvictedCacheEntry evict = null;
 		
-		tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId)
-				throw new DuplicateCacheEntryException(newPage.getPageNumber(), resourceId);
-			tmp = tmp.getNext();
-		}
-		
-		//Case II: x is in B1.
-	    tmp = B1_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId) {
-				p = p + (B1_length > B2_length ? 1: (B2_length / B1_length));
-				p = (p > c ? c : p);
-				DoubleLinkedList tt = new DoubleLinkedList(newPage, resourceId, false);
-				if (T2_head != null) {
-					T2_head.addPrev(tt);
-					tt.addNext(T2_head);
-					T2_head = tt;
-				}
-				else {
-					T2_head = T2_tail = tt;
-				}
-				T2_length++;
-				return subroutine_replace(newPage, resourceId, false);
+		int pageNumber = newPage.getPageNumber();
+		for(CacheEntry itr : t1) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				throw new DuplicateCacheEntryException(pageNumber, resourceId);
 			}
-			tmp = tmp.getNext();
 		}
-		
-		//Case III: x is in B2
-		tmp = B2_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId) {
-				p = p - (B2_length > B1_length ? 1: (B1_length / B2_length));
-				p = (p > 0 ? p : 0);
-				DoubleLinkedList tt = new DoubleLinkedList(newPage, resourceId, false);
-				if (T2_head != null) {
-					T2_head.addPrev(tt);
-					tt.addNext(T2_head);
-					T2_head = tt;
-				}
-				else {
-					T2_head = T2_tail = tt;
-				}
-				T2_length++;
-				return subroutine_replace(newPage, resourceId, true);
+		for(CacheEntry itr : t2) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				throw new DuplicateCacheEntryException(pageNumber, resourceId);
 			}
-			tmp = tmp.getNext();
 		}
 		
-		//Case IV: x is totally missing
-		EvictedCacheEntry ece = null;
-		if (T1_length + B1_length == c) {
-			if (T1_length < c) {
-				if (B1_length != 1) {
-					B1_tail.getPrev().addNext(null);
-					B1_tail = B1_tail.getPrev();
-				}
-				else {
-					B1_tail = B1_head = null;
-				}
-				B1_length--;
-				subroutine_replace(newPage, resourceId, false);	
-			} 
+		Pair<Integer, Integer> pair = new Pair<Integer,Integer>(resourceId, pageNumber);
+		
+		if(b2.contains(pair)) {
+			int sigma = (b2.size() >= b1.size() ? 1 : b1.size()/b2.size());
+			p -= sigma;
+			if(p<0) p=0;
+			
+
+			evict = this.subroutine_replace(true);
+			b2.remove(pair);
+			t2.addFirst(new CacheEntry(newPage, resourceId, false));
+			return evict;
+		}
+		
+		if(b1.contains(pair)) {
+			int sigma = (b1.size() >= b2.size() ? 1 : b2.size()/b1.size());
+			p = (p+sigma > numPages ? numPages : p+sigma);
+			
+			evict = this.subroutine_replace(false);
+			b1.remove(pair);
+			t2.addFirst(new CacheEntry(newPage, resourceId, false));
+			return evict;
+		}
+
+		
+		if(t1.size() + b1.size() == numPages) {
+			if(t1.size() < numPages) {
+				b1.removeLast();
+				evict = this.subroutine_replace(false);
+			}
 			else {
-				DoubleLinkedList iter = T1_tail;
-				while (iter != null && iter.isPinned())
-					iter = iter.getPrev();
-				if (iter != null) {
-					if (iter != T1_head) {
-						iter.getPrev().addNext(iter.getNext());
-						if (iter != T1_tail)
-							iter.getNext().addPrev(iter.getPrev());
-						else
-							T1_tail = iter.getPrev();
-					}
-					else {
-						T1_head = iter.getNext();
-						T1_head.addPrev(null);
-					}
-					T1_length--;
-					ece = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), resourceId);
-				}
+				evict = evictFromList(1);
 			}
 		}
 		else {
-			if (T1_length + T2_length + B1_length + B2_length >= c) {
-				if (T1_length + T2_length + B1_length + B2_length == 2 * c) {
-					if (B2_length != 1) {
-						B2_tail.getPrev().addNext(null);
-						B2_tail = B2_tail.getPrev();
-					}
-					else {
-						B2_tail = B2_head = null;
-					}
-					B2_length--;
-				}
-				ece = subroutine_replace(newPage, resourceId, false);
+			int total = t1.size() + t2.size() + b1.size() + b2.size();
+			if(total >= numPages) {
+				if(total == 2*numPages)
+					b2.removeLast();
+				evict = this.subroutine_replace(false);
 			}
 		}
 		
-		DoubleLinkedList t = new DoubleLinkedList(newPage, resourceId, false);
-		if (T1_length != 0) {
-			T1_head.addPrev(t);
-			t.addNext(T1_head);
-			T1_head = t;
+		t1.addFirst(new CacheEntry(newPage, resourceId, false));
+		if(evict == null && bufferCount < numPages) {
+			evict = new EvictedCacheEntry(buffers[bufferCount], null, -1);
+			bufferCount++;
 		}
-		else
-			T1_head = T1_tail = t;
-		T1_length++;
-		if (ece == null) {
-			byte [] x = new byte[this.pageSize];
-			ece = new EvictedCacheEntry(x,null,-1);
-		}
-		return ece;
+		return evict;
 	}
 
 	@Override
 	public EvictedCacheEntry addPageAndPin(CacheableData newPage, int resourceId)
 			throws CachePinnedException, DuplicateCacheEntryException {
+		EvictedCacheEntry evict = null;
 		
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId)
-				throw new DuplicateCacheEntryException(newPage.getPageNumber(), resourceId);
-			tmp = tmp.getNext();
-		}
-		
-		tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId)
-				throw new DuplicateCacheEntryException(newPage.getPageNumber(), resourceId);
-			tmp = tmp.getNext();
-		}
-		
-		//Case II: x is in B1.
-	    tmp = B1_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId) {
-				p = p + (B1_length > B2_length ? 1: (B2_length / B1_length));
-				p = (p > c ? c : p);
-				DoubleLinkedList tt = new DoubleLinkedList(newPage, resourceId, false);
-				if (T2_head != null) {
-					T2_head.addPrev(tt);
-					tt.addNext(T2_head);
-					T2_head = tt;
-				}
-				else {
-					T2_head = T2_tail = tt;
-				}
-				T2_length++;
-				return subroutine_replace(newPage, resourceId, false);
+		int pageNumber = newPage.getPageNumber();
+		for(CacheEntry itr : t1) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				throw new DuplicateCacheEntryException(pageNumber, resourceId);
 			}
-			tmp = tmp.getNext();
 		}
-		
-		//Case III: x is in B2
-		tmp = B2_head;
-		while (tmp != null) {
-			if (tmp.getPageNumber() == newPage.getPageNumber() && tmp.getResourceId() == resourceId) {
-				p = p - (B2_length > B1_length ? 1: (B1_length / B2_length));
-				p = (p > 0 ? p : 0);
-				DoubleLinkedList tt = new DoubleLinkedList(newPage, resourceId, false);
-				if (T2_head != null) {
-					T2_head.addPrev(tt);
-					tt.addNext(T2_head);
-					T2_head = tt;
-				}
-				else {
-					T2_head = T2_tail = tt;
-				}
-				T2_length++;
-				return subroutine_replace(newPage, resourceId, true);
+		for(CacheEntry itr : t2) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				throw new DuplicateCacheEntryException(pageNumber, resourceId);
 			}
-			tmp = tmp.getNext();
 		}
 		
-		//Case IV: x is totally missing
-		EvictedCacheEntry ece = null;
-		if (T1_length + B1_length == c) {
-			if (T1_length < c) {
-				if (B1_length != 1) {
-					B1_tail.getPrev().addNext(null);
-					B1_tail = B1_tail.getPrev();
-				}
-				else {
-					B1_tail = B1_head = null;
-				}
-				B1_length--;
-				subroutine_replace(newPage, resourceId, false);	
-			} 
+		Pair<Integer, Integer> pair = new Pair<Integer,Integer>(resourceId, pageNumber);
+		
+		if(b2.contains(pair)) {
+
+			int sigma = b2.size() >= b1.size() ? 1 : b1.size()/b2.size();
+			p -= sigma;
+			if(p<0) p=0;
+			
+
+			evict = this.subroutine_replace(true);
+			b2.remove(pair);
+			t2.addFirst(new CacheEntry(newPage, resourceId, true, true));
+			return evict;
+		}
+		
+		if(b1.contains(pair)) {
+			int sigma = b1.size() >= b2.size() ? 1 : b2.size()/b1.size();
+			p = p+sigma > numPages ? numPages : p+sigma;
+			
+			evict = this.subroutine_replace(false);
+			b1.remove(pair);
+			t2.addFirst(new CacheEntry(newPage, resourceId, true, true));
+			return evict;
+		}
+
+		
+		if(t1.size() + b1.size() == numPages) {
+			if(t1.size() < numPages) {
+				b1.removeLast();
+				evict = this.subroutine_replace(false);
+			}
 			else {
-				DoubleLinkedList iter = T1_tail;
-				while (iter != null && iter.isPinned())
-					iter = iter.getPrev();
-				if (iter != null) {
-					if (iter != T1_head) {
-						iter.getPrev().addNext(iter.getNext());
-						if (iter != T1_tail)
-							iter.getNext().addPrev(iter.getPrev());
-						else
-							T1_tail = iter.getPrev();
-					}
-					else {
-						T1_head = iter.getNext();
-						T1_head.addPrev(null);
-					}
-					T1_length--;
-					ece = new EvictedCacheEntry(iter.getCacheableData().getBuffer(), iter.getCacheableData(), resourceId);
-				}
+				evict = evictFromList(1);
 			}
 		}
 		else {
-			if (T1_length + T2_length + B1_length + B2_length >= c) {
-				if (T1_length + T2_length + B1_length + B2_length == 2 * c) {
-					if (B2_length != 1) {
-						B2_tail.getPrev().addNext(null);
-						B2_tail = B2_tail.getPrev();
-					}
-					else {
-						B2_tail = B2_head = null;
-					}
-					B2_length--;
-				}
-				ece = subroutine_replace(newPage, resourceId, false);
+			int total = t1.size() + t2.size() + b1.size() + b2.size();
+			if(total >= numPages) {
+				if(total == 2*numPages)
+					b2.removeLast();
+				evict = this.subroutine_replace(false);
 			}
 		}
 		
-		DoubleLinkedList t = new DoubleLinkedList(newPage, resourceId, true);
-		if (T1_length != 0) {
-			T1_head.addPrev(t);
-			t.addNext(T1_head);
-			T1_head = t;
-		}
-		else
-			T1_head = T1_tail = t;
-		T1_length++;
-		if (ece == null) {
-			byte [] x = new byte[this.pageSize];
-			ece = new EvictedCacheEntry(x,null,-1);
-		}
-		return ece;
+		
+		t1.addFirst(new CacheEntry(newPage, resourceId, true, true));
+		return evict;
 	}
 
 	@Override
 	public void unpinPage(int resourceId, int pageNumber) {
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getCacheableData().getPageNumber() == pageNumber && tmp.getResourceId() == resourceId)
-				tmp.unPinn();
-			tmp = tmp.getNext();
+		
+		for(CacheEntry itr : t1) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				itr.decreasePinned();
+				return;
+			}
 		}
 		
-		tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getCacheableData().getPageNumber() == pageNumber && tmp.getResourceId() == resourceId)
-				tmp.unPinn();
-			tmp = tmp.getNext();
+		for(CacheEntry itr : t2) {
+			if(itr.getResourceID() == resourceId && itr.getPageNumber() == pageNumber) {
+				itr.decreasePinned();
+				return;
+			}
 		}
-		
 	}
 
 	@Override
 	public CacheableData[] getAllPagesForResource(int resourceId) {
-		CacheableData[] cad;
-		cad = new CacheableData[c];
-		int length = 0;
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId) 
-				cad[length++] = this.getPage(resourceId, tmp.getPageNumber());
-			tmp = tmp.getNext();
-		}
-		tmp = T2_head;
-		while (tmp != null) {
-			if (tmp.getResourceId() == resourceId) 
-				cad[length++] = this.getPage(resourceId, tmp.getPageNumber());
-			tmp = tmp.getNext();
+		
+		LinkedList<Integer> pageNumbers = new LinkedList<Integer>();
+		
+		for(CacheEntry itr : t1) {
+			if(itr.getResourceID() == resourceId) {
+				pageNumbers.add(itr.getPageNumber());
+			}
 		}
 		
-		return cad;
+		for(CacheEntry itr : t2) {
+			if(itr.getResourceID() == resourceId) {
+				pageNumbers.add(itr.getPageNumber());
+			}
+		}
+		
+		CacheableData[] result = new CacheableData[pageNumbers.size()];
+		
+		int i=0;
+		for(Integer num : pageNumbers) {
+			result[i] = this.getPage(resourceId, num);
+			i++;
+		}
+		
+		return result;
 	}
 
+	
 	@Override
 	public void expellAllPagesForResource(int resourceId) {
-		// TODO Auto-generated method stub
 		
+		int i, n;
+		for(i=0, n=0; n<t1.size(); ++n) {
+			CacheEntry cur = t1.get(i);
+			if(cur.getResourceID() == resourceId) {
+				cur.markExpelled();
+				//move the expelled entry to the end of the list
+				CacheEntry removed = t1.remove(i);
+				t1.addLast(removed);
+				expellCountT1++;
+			}
+			else {
+				i++;
+			}
+		}
+
+		for(i=0, n=0; n<t2.size(); ++n) {
+			CacheEntry cur = t2.get(i);
+			if(cur.getResourceID() == resourceId) {
+				cur.markExpelled();
+				//move the expelled entry to the end of the list
+				CacheEntry removed = t2.remove(i);
+				t2.addLast(removed);
+				expellCountT2++;
+			}
+			else {
+				i++;
+			}
+		}
 	}
 
 	@Override
 	public int getCapacity() {
-		return this.c;
+		return this.numPages;
 	}
 
 	@Override
 	public void unpinAllPages() {
-		DoubleLinkedList tmp = T1_head;
-		while (tmp != null) {
-				tmp.unPinn();
-			tmp = tmp.getNext();
-		}
 		
-		tmp = T2_head;
-		while (tmp != null) {
-				tmp.unPinn();
-			tmp = tmp.getNext();
+		for(CacheEntry itr : t1) {
+			itr.setUnpinned();
 		}
-		
+		for(CacheEntry itr : t2) {
+			itr.setUnpinned();
+		}	
 	}
 
 }

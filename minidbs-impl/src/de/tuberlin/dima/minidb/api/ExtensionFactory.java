@@ -70,7 +70,7 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		PageCacheImpl pc = new PageCacheImpl(pageSize.getNumberOfBytes(), numPages);
+		PageCacheImpl pc = new PageCacheImpl(pageSize, numPages);
 		return pc;
 	}
 
