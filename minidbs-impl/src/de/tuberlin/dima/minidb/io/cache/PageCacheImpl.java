@@ -352,8 +352,12 @@ public class PageCacheImpl implements PageCache {
 		else {
 			int total = t1.size() + t2.size() + b1.size() + b2.size();
 			if(total >= numPages) {
-				if(total == 2*numPages)
-					b2.removeLast();
+				if(total == 2*numPages) {
+					//TODO not right....
+					if (b2.size() != 0)
+						b2.removeLast();
+					else b1.removeLast();
+				}
 				evict = this.subroutine_replace(false);
 			}
 		}

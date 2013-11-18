@@ -330,6 +330,7 @@ public class TestBufferPoolManagerStudents extends AbstractTestBufferPoolManager
 			DataTuple tuple = generateTuple(schema);
 			// insert tuple into page
 			tp.insertTuple(tuple);
+		
 			// flood cache with additional pages	
 			for ( int i = 0; i < this.config.getCacheSize(PageSize.SIZE_8192) * 2; i++)
 			{
@@ -340,6 +341,7 @@ public class TestBufferPoolManagerStudents extends AbstractTestBufferPoolManager
 				((TablePage) insert).insertTuple(insertTuple);
 				// unpin page
 				this.underTest.unpinPage(resource, insert.getPageNumber());
+				
 			}
 			MockResourceManager mrm = (MockResourceManager) this.resourceManagers.get(resource);
 			LinkedList<Integer> oldReadRequests = mrm.getReadRequests();
@@ -593,6 +595,7 @@ public class TestBufferPoolManagerStudents extends AbstractTestBufferPoolManager
 			// stop flooding threads
 			for (int i = 0; i < flooder.length; i++)
 			{
+//				System.out.println("flood -" + i + "stop");
 				flooder[i].stopThread();
 				flooder[i].interrupt();
 				try {

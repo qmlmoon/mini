@@ -123,6 +123,7 @@ public class TestSerializationThread extends Thread
 				{
 					// increase a stored value in the binary buffer
 					int pageNumber = this.modifiedKeys.get(this.random.nextInt(100));
+//					System.out.println("Seri -" + this.getName() + this.resourceId + " " + pageNumber);
 					CacheableData cd = this.parent.underTest.getPageAndPin(this.resourceId, pageNumber);
 					manipulateBinaryPage(cd.getBuffer(), TestSerializationThread.fieldPos);
 					int mods = this.modifiedValues.get(pageNumber);
@@ -173,6 +174,7 @@ public class TestSerializationThread extends Thread
 			fieldValue++;
 			IntField.encodeIntAsBinary(fieldValue, binaryEncoded, offset);
 			this.manipulations++;
+//			System.out.println("S" + this.getName() + "ma:" + this.manipulations);
 			if(this.manipulations == totalManipulations)
 			{
 				this.alive = false;

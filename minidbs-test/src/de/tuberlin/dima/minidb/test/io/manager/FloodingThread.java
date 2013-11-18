@@ -69,6 +69,7 @@ public class FloodingThread extends Thread
 			try 
 			{
 				int pageNumber = this.pageNumbers.get(this.random.nextInt(this.pageNumbers.size()));
+//				System.out.println(""+ this.getName() + " " +  this.resource + " " + pageNumber);
 				this.parent.underTest.getPageAndPin(this.resource, pageNumber);
 				this.parent.underTest.unpinPage(this.resource, pageNumber);
 				// make sure to have frequent pages

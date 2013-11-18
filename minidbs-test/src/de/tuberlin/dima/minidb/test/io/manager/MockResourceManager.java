@@ -225,6 +225,7 @@ public class MockResourceManager extends ResourceManager
 		// write contents to specified position
 		if(wrapper.getPageNumber() < this.pageNumber && wrapper.getPageNumber() >= firstPageNumber)
 		{
+
 			// copy contents to "disk"
 			System.arraycopy(buffer, 0, this.diskBuffer.get(wrapper.getPageNumber() - 1), 0, buffer.length);
 		}
