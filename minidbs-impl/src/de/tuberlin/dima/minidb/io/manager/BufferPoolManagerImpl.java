@@ -93,7 +93,9 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 			//do nothing
 		}else{
 			cache = new PageCacheImpl(pagesize,  numPages);
+			caches.put(pagesize, cache);
 			buffer = new FreeBuffer(pagesize.getNumberOfBytes(), this.config.getNumIOBuffers(), rthread, wthread) ;
+			buffers.put(pagesize, buffer);
 		}
 		
 		this.resourceManagers.put(id, manager);
