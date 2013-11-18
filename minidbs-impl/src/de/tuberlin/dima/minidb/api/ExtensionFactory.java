@@ -9,15 +9,15 @@ import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
-import de.tuberlin.dima.minidb.io.cache.PageCacheImpl;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.cache.solution.AdaptiveReplacementCache;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManagerImpl;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
-import de.tuberlin.dima.minidb.io.tables.TablePageImpl;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
+import de.tuberlin.dima.minidb.io.tables.solution.TablePageImpl;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -71,7 +71,7 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		PageCacheImpl pc = new PageCacheImpl(pageSize, numPages);
+		PageCache pc = new AdaptiveReplacementCache(pageSize, numPages);
 		return pc;
 	}
 

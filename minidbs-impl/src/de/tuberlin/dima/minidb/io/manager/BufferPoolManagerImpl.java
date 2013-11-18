@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.logging.Logger;
 
 import de.tuberlin.dima.minidb.Config;
+import de.tuberlin.dima.minidb.api.AbstractExtensionFactory;
 import de.tuberlin.dima.minidb.io.cache.CachePinnedException;
 import de.tuberlin.dima.minidb.io.cache.CacheableData;
 import de.tuberlin.dima.minidb.io.cache.DuplicateCacheEntryException;
 import de.tuberlin.dima.minidb.io.cache.EvictedCacheEntry;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
-import de.tuberlin.dima.minidb.io.cache.PageCacheImpl;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
 
@@ -92,7 +92,7 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		if(cache != null){
 			//do nothing
 		}else{
-			cache = new PageCacheImpl(pagesize,  numPages);
+			cache = AbstractExtensionFactory.getExtensionFactory().createPageCache(pagesize,  numPages);
 			caches.put(pagesize, cache);
 			buffer = new FreeBuffer(pagesize.getNumberOfBytes(), this.config.getNumIOBuffers(), rthread, wthread) ;
 			buffers.put(pagesize, buffer);
