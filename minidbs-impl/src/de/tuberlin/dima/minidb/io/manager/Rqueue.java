@@ -35,6 +35,7 @@ public class Rqueue extends Thread {
 	 */
 	public synchronized boolean enQueue(Request r){
 		if(rqueue.size() < maxSize){
+			System.out.println(r.getPageNumber());
 			for (int i = 0; i < rqueue.size(); i++) {
 				Request tmp = rqueue.poll();
 				rqueue.offer(tmp);

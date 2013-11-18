@@ -23,17 +23,23 @@ public class Prefetch extends Thread {
 	
 	private HashMap<Integer, ResourceManager> resourceManager;
 	
-	public Prefetch(Request re, PageCache page_cache, int id, FreeBuffer free_buffer, HashMap<Integer, ResourceManager> rm) {
+	private Rqueue rthread;
+	
+	public Prefetch(Request re, PageCache page_cache, int id, FreeBuffer free_buffer, HashMap<Integer, ResourceManager> rm, Rqueue rt) {
 		request = re;
 		cache = page_cache;
 		resourceId = id;
 		buffer = free_buffer;
 		resourceManager = rm;
+		rthread = rt;
 	}
 	public void run() {
 		try {
 			synchronized(request) {
+				System.out.println("im waiting");
+				rthread.enQueue(request);
 				request.wait();
+				System.out.println("im not waiting");
 			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block

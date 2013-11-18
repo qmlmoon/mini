@@ -47,6 +47,8 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		
 		rthread.start();
 		wthread.start();
+		System.out.println(rthread.getName());
+		System.out.println(wthread.getName());
 	}
 
 	@Override
@@ -196,9 +198,9 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 			else {
 				//TODO cause this function return immediately dont wait, create a new thread to wait. any better idea?
 				Request r = new Request(resourceId, pageNumber, this.resourceManagers.get(resourceId), this.buffers);
-				Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers);
+				Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers, rthread);
 				pf.start();
-				rthread.enQueue(r);
+				
 			}
 		}		
 	}
@@ -214,9 +216,8 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				CacheableData tmp = this.cache.getPage(resourceId, i);
 				if (tmp == null) {
 					Request r = new Request(resourceId, i, this.resourceManagers.get(resourceId), this.buffers);
-					Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers);
+					Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers, rthread);
 					pf.start();
-					rthread.enQueue(r);
 				}
 			}
 		}
