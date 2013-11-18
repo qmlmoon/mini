@@ -124,7 +124,7 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				//add the new page to cache + add the evicted to freebuffer
 				try {
 					EvictedCacheEntry ev = this.cache.addPageAndPin(r.getNewPage(), resourceId);
-					if (ev.getResourceID() != -1) 
+					if (ev != null && ev.getResourceID() != -1) 
 						this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				} catch (CachePinnedException e) {
 					// TODO Auto-generated catch block
@@ -162,7 +162,7 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				}
 				try {
 					EvictedCacheEntry ev = this.cache.addPageAndPin(r.getNewPage(), resourceId);
-					if (ev.getResourceID() != -1) 
+					if (ev != null && ev.getResourceID() != -1) 
 						this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				} catch (CachePinnedException e) {
 					// TODO Auto-generated catch block
@@ -248,7 +248,7 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				EvictedCacheEntry ev = this.cache.addPageAndPin(newPage, resourceId);
 //				if (ev.getResourceID() != -1) 
 				
-				if (ev != null) {
+				if (ev != null && ev.getResourceID() != -1) {
 					this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				}
 			} catch (CachePinnedException e) {
@@ -281,7 +281,7 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 			try {
 				EvictedCacheEntry ev = this.cache.addPageAndPin(newPage, resourceId);
 //				if (ev.getResourceID() != -1)
-				if (ev != null)
+				if (ev != null && ev.getResourceID() != -1)
 					this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 			} catch (CachePinnedException e) {
 				e.printStackTrace();
