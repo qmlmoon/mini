@@ -34,6 +34,9 @@ public class WriteThread extends Thread {
 		this.alive = false;
 	}
 	
+	public boolean isActive(){
+		return this.active;
+	}
 //	
 //	public synchronized boolean enQueue(Request r) {
 //		if(wqueue.size() < maxSize){

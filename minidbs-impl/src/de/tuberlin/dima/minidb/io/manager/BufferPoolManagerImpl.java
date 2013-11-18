@@ -22,26 +22,29 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 	Logger logger;
 	
 	//<Resource ID, ResouceManager>
-	HashMap<Integer, ResourceManager> resourceManagers = new HashMap<Integer, ResourceManager>();
-	PageCache cache;
+	HashMap<Integer, ResourceManager> resourceManagers;
+	HashMap<PageSize, PageCache> caches;
 	Rqueue rthread;
 	WriteThread wthread;
 	//write thread is merged into rthread.....cause we need to write only when buffer is full
 //	Wqueue wthread = new  Wqueue();
 	
 	//TODO dont sure whether a cache with certain resourceId has one freebuffer or a pagesize has one freebuffer
-	FreeBuffer buffers; // free buffers
+	HashMap<PageSize,FreeBuffer> buffers; // free buffers
 	
 
 	public BufferPoolManagerImpl(Config con, Logger log) {
 		this.config = con;
 		this.logger = log;
-		this.cache = null;
+		this.caches = null;
 	}
 	
 	@Override
 	public void startIOThreads() throws BufferPoolException {
 		isActive = true;
+		caches = new HashMap<PageSize, PageCache>();
+		buffers = new HashMap<PageSize, FreeBuffer>();
+		resourceManagers = new HashMap<Integer, ResourceManager>();
 		rthread = new Rqueue();
 		wthread = new WriteThread(this.config.getNumIOBuffers());
 		rthread.start();
@@ -53,10 +56,19 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		isActive = false;
 		rthread.shutdown();
 		for (int r:resourceManagers.keySet()) {
-			CacheableData [] writeBackData = this.cache.getAllPagesForResource(r);
-			for (CacheableData data : writeBackData) {
-				buffers.addWriteEntry(new EvictedCacheEntry(data.getBuffer(), data, r), resourceManagers.get(r));
+			for(PageSize pagesize : caches.keySet()){
+				PageCache cache = caches.get(pagesize);
+				FreeBuffer buffer = buffers.get(pagesize);
+				CacheableData [] writeBackData = cache.getAllPagesForResource(r);
+				for (CacheableData data : writeBackData) {
+					buffer.addWriteEntry(new EvictedCacheEntry(data.getBuffer(), data, r), resourceManagers.get(r));
+				}
 			}
+			
+		}
+		
+		while(wthread.isActive()){
+			
 		}
 		wthread.shutdown();
 	}
@@ -72,15 +84,16 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		
 		int numPages = this.config.getCacheSize(pagesize); //
 		
-		
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
 		//If the buffer pool has already a cache for the page size used by that resource
 		//the cache will be used for the resource. 
 		//Otherwise, a new cache will be created for that page size. 
-		if(this.cache != null){
+		if(cache != null){
 			//do nothing
 		}else{
 			cache = new PageCacheImpl(pagesize,  numPages);
-			buffers = new FreeBuffer(pagesize.getNumberOfBytes(), this.config.getNumIOBuffers(), rthread, wthread) ;
+			buffer = new FreeBuffer(pagesize.getNumberOfBytes(), this.config.getNumIOBuffers(), rthread, wthread) ;
 		}
 		
 		this.resourceManagers.put(id, manager);
@@ -92,18 +105,24 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
+		
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
 		//lock the cache
-		synchronized(this.cache) {
+		synchronized(cache) {
 //			System.out.println("pin" + resourceId + " " + pageNumber);
 
 			//if page hit in cache
-			CacheableData tmp = this.cache.getPageAndPin(resourceId, pageNumber);
+			CacheableData tmp = cache.getPageAndPin(resourceId, pageNumber);
 			if (tmp != null) {
 //				System.out.println("readf" + resourceId + " " + pageNumber);
 				return tmp;
 			}
 			else {
-				Request r = new Request(resourceId, pageNumber, this.resourceManagers.get(resourceId), this.buffers);
+				Request r = new Request(resourceId, pageNumber, this.resourceManagers.get(resourceId), buffer);
 
 				//enqueue the request
 				//wait
@@ -123,9 +142,9 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				}
 				//add the new page to cache + add the evicted to freebuffer
 				try {
-					EvictedCacheEntry ev = this.cache.addPageAndPin(r.getNewPage(), resourceId);
+					EvictedCacheEntry ev = cache.addPageAndPin(r.getNewPage(), resourceId);
 					if (ev != null && ev.getResourceID() != -1) 
-						this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
+						buffer.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				} catch (CachePinnedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -145,13 +164,19 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		//just put unpin and getpageandpin together and locked together
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
-		synchronized(this.cache) {
-			this.cache.unpinPage(resourceId, unpinPageNumber);
-			CacheableData tmp = this.cache.getPageAndPin(resourceId, getPageNumber);
+		
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
+		synchronized(cache) {
+			cache.unpinPage(resourceId, unpinPageNumber);
+			CacheableData tmp = cache.getPageAndPin(resourceId, getPageNumber);
 			if (tmp != null)
 				return tmp;
 			else {
-				Request r = new Request(resourceId, getPageNumber, this.resourceManagers.get(resourceId), this.buffers);
+				Request r = new Request(resourceId, getPageNumber, this.resourceManagers.get(resourceId), buffer);
 				rthread.enQueue(r);
 				try {
 					synchronized(r) {
@@ -161,9 +186,9 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 					e.printStackTrace();
 				}
 				try {
-					EvictedCacheEntry ev = this.cache.addPageAndPin(r.getNewPage(), resourceId);
+					EvictedCacheEntry ev = cache.addPageAndPin(r.getNewPage(), resourceId);
 					if (ev != null && ev.getResourceID() != -1) 
-						this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
+						buffer.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				} catch (CachePinnedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -182,8 +207,11 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 
 		if(!this.isActive) return;
 		if(!this.resourceManagers.containsKey(resourceId)) return;
-		synchronized(this.cache) {
-			this.cache.unpinPage(resourceId, pageNumber);
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		synchronized(cache) {
+			cache.unpinPage(resourceId, pageNumber);
 		}
 		
 	}
@@ -194,14 +222,19 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
-		synchronized(this.cache) {
-			CacheableData tmp = this.cache.getPage(resourceId, pageNumber);
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
+		synchronized(cache) {
+			CacheableData tmp = cache.getPage(resourceId, pageNumber);
 			if (tmp != null)
 				return;
 			else {
 				//TODO cause this function return immediately dont wait, create a new thread to wait. any better idea?
-				Request r = new Request(resourceId, pageNumber, this.resourceManagers.get(resourceId), this.buffers);
-				Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers, rthread);
+				Request r = new Request(resourceId, pageNumber, this.resourceManagers.get(resourceId), buffer);
+				Prefetch pf = new Prefetch(r, cache, resourceId, buffer, this.resourceManagers, rthread);
 				pf.start();
 				
 			}
@@ -214,12 +247,17 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
-		synchronized(this.cache) {
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
+		synchronized(cache) {
 			for (int i = startPageNumber; i <= endPageNumber; i++) {
-				CacheableData tmp = this.cache.getPage(resourceId, i);
+				CacheableData tmp = cache.getPage(resourceId, i);
 				if (tmp == null) {
-					Request r = new Request(resourceId, i, this.resourceManagers.get(resourceId), this.buffers);
-					Prefetch pf = new Prefetch(r, this.cache, resourceId, this.buffers, this.resourceManagers, rthread);
+					Request r = new Request(resourceId, i, this.resourceManagers.get(resourceId), buffer);
+					Prefetch pf = new Prefetch(r, cache, resourceId, buffer, this.resourceManagers, rthread);
 					pf.start();
 				}
 			}
@@ -233,11 +271,17 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
-		synchronized(this.cache) {
+		
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
+		synchronized(cache) {
 			CacheableData newPage = null;
 			//create newpage by using resourceManager and giving freebuffer
 			try {
-				newPage = this.resourceManagers.get(resourceId).reserveNewPage(this.buffers.getReadBuffer());
+				newPage = this.resourceManagers.get(resourceId).reserveNewPage(buffer.getReadBuffer());
 			} catch (PageFormatException e) {
 				e.printStackTrace();
 			} catch (InterruptedException e) {
@@ -245,11 +289,11 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				e.printStackTrace();
 			}
 			try {
-				EvictedCacheEntry ev = this.cache.addPageAndPin(newPage, resourceId);
+				EvictedCacheEntry ev = cache.addPageAndPin(newPage, resourceId);
 //				if (ev.getResourceID() != -1) 
 				
 				if (ev != null && ev.getResourceID() != -1) {
-					this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
+					buffer.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 				}
 			} catch (CachePinnedException e) {
 				// TODO Auto-generated catch block
@@ -268,10 +312,15 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 			throws BufferPoolException, IOException {
 		if(!this.isActive) throw new BufferPoolException();
 		if(!this.resourceManagers.containsKey(resourceId)) throw new BufferPoolException();
-		synchronized(this.cache) {
+		ResourceManager rm = resourceManagers.get(resourceId);
+		PageSize pagesize = rm.getPageSize();
+		PageCache cache = caches.get(pagesize);
+		FreeBuffer buffer = buffers.get(pagesize);
+
+		synchronized(cache) {
 			CacheableData newPage = null;
 			try {
-				newPage = this.resourceManagers.get(resourceId).reserveNewPage(this.buffers.getReadBuffer(), type);
+				newPage = this.resourceManagers.get(resourceId).reserveNewPage(buffer.getReadBuffer(), type);
 			} catch (PageFormatException e) {
 				e.printStackTrace();
 			} catch (InterruptedException e) {
@@ -279,10 +328,10 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 				e.printStackTrace();
 			}
 			try {
-				EvictedCacheEntry ev = this.cache.addPageAndPin(newPage, resourceId);
+				EvictedCacheEntry ev = cache.addPageAndPin(newPage, resourceId);
 //				if (ev.getResourceID() != -1)
 				if (ev != null && ev.getResourceID() != -1)
-					this.buffers.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
+					buffer.addWriteEntry(ev, this.resourceManagers.get(ev.getResourceID()));
 			} catch (CachePinnedException e) {
 				e.printStackTrace();
 			} catch (DuplicateCacheEntryException e) {
