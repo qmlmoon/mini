@@ -29,19 +29,20 @@ public class Rqueue extends Thread {
 		rqueue = new LinkedList<Request>();
 		this.alive = true;
 	}
+
 	
 	/*
 	 * return false if queue is already full
 	 */
 	public synchronized boolean enQueue(Request r){
 		if(rqueue.size() < maxSize){
-			System.out.println(r.getPageNumber());
 			for (int i = 0; i < rqueue.size(); i++) {
 				Request tmp = rqueue.poll();
 				rqueue.offer(tmp);
 				if (tmp.getResourceId() == r.getResourceId() && tmp.getPageNumber() == r.getPageNumber())
 					return false;
 			}
+		
 			return rqueue.offer(r);
 		}
 		else{

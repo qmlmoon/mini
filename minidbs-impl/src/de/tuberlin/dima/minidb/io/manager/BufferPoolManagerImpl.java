@@ -37,24 +37,27 @@ public class BufferPoolManagerImpl implements BufferPoolManager{
 		this.config = con;
 		this.logger = log;
 		this.cache = null;
-		rthread = new Rqueue();
-		wthread = new WriteThread(this.config.getNumIOBuffers());
 	}
 	
 	@Override
 	public void startIOThreads() throws BufferPoolException {
 		isActive = true;
-		
+		rthread = new Rqueue();
+		wthread = new WriteThread(this.config.getNumIOBuffers());
 		rthread.start();
 		wthread.start();
-		System.out.println(rthread.getName());
-		System.out.println(wthread.getName());
 	}
 
 	@Override
 	public void closeBufferPool() {
 		isActive = false;
 		rthread.shutdown();
+		for (int r:resourceManagers.keySet()) {
+			CacheableData [] writeBackData = this.cache.getAllPagesForResource(r);
+			for (CacheableData data : writeBackData) {
+				buffers.addWriteEntry(new EvictedCacheEntry(data.getBuffer(), data, r), resourceManagers.get(r));
+			}
+		}
 		wthread.shutdown();
 	}
 

@@ -36,10 +36,8 @@ public class Prefetch extends Thread {
 	public void run() {
 		try {
 			synchronized(request) {
-				System.out.println("im waiting");
 				rthread.enQueue(request);
 				request.wait();
-				System.out.println("im not waiting");
 			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
