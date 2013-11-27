@@ -11,10 +11,13 @@ import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.cache.solution.AdaptiveReplacementCache;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
+import de.tuberlin.dima.minidb.io.manager.solution.BufferPoolManagerImpl;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
+import de.tuberlin.dima.minidb.io.tables.solution.TablePageImpl;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -50,22 +53,22 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new TablePageImpl(schema, binaryPage);
 	}
 
 	@Override
 	public TablePage initTablePage(TableSchema schema, byte[] binaryPage, int newPageNumber) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new TablePageImpl(schema, binaryPage, newPageNumber);
 	}
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new AdaptiveReplacementCache(pageSize, numPages);
 	}
 
 	@Override
 	public BufferPoolManager createBufferPoolManager(Config config, Logger logger) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new BufferPoolManagerImpl(config, logger);
 	}
 
 	@Override
