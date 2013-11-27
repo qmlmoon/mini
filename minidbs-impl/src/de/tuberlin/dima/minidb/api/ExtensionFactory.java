@@ -9,13 +9,11 @@ import de.tuberlin.dima.minidb.catalogue.TableSchema;
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
-import de.tuberlin.dima.minidb.io.cache.PageCacheImpl;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
-import de.tuberlin.dima.minidb.io.tables.TablePageImpl;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
@@ -43,12 +41,6 @@ import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
 import de.tuberlin.dima.minidb.semantics.SelectQueryAnalyzer;
 
-/**
- * Exercise 1
- * Implementation for methods createTablePage and initTablePage
- * @author Titicaca
- *
- */
 public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
@@ -58,20 +50,17 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		TablePageImpl tp = new TablePageImpl(schema, binaryPage);
-		return tp;
+		throw new UnsupportedOperationException("Method not yet supported");
 	}
 
 	@Override
 	public TablePage initTablePage(TableSchema schema, byte[] binaryPage, int newPageNumber) throws PageFormatException {
-		TablePageImpl tp = new TablePageImpl(schema,binaryPage,newPageNumber);
-		return tp;
+		throw new UnsupportedOperationException("Method not yet supported");
 	}
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		PageCacheImpl pc = new PageCacheImpl(pageSize, numPages);
-		return pc;
+		throw new UnsupportedOperationException("Method not yet supported");
 	}
 
 	@Override

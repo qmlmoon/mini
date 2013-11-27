@@ -299,7 +299,7 @@ public class TestPageCacheStudents
 			this.underTest.addPage(newEntry, entry.getResourceId());
 			n++;
 		}
-	
+		
 		// now newly referenced pages should be in t2 (pages moved from b2 to t2) / refresh pages in t2
 		// add cache size number of items to simulate scan
 		randomlyAdded = new HashSet<EntryId>(this.underTest.getCapacity());
