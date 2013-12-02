@@ -45,23 +45,40 @@ public class KeyIterator implements IndexResultIterator<DataField> {
 			return false;
 		if(cursor == results.size()) {
 			if(this.hasNextPage) {
-				
-				BTreeLeafPage leaf = this.btree.getLeafPage(this.nextLeaf);
-				if(leaf == null) {
-					this.hasNextPage = false;
-					return false;
-				}
-				//iterator for range key
-				int pos = 0;
-				if(leaf.getFirstKey().compareTo(startKey) < 0) {
+				//iterator for range key, find the right start position first
+				boolean getRightPosition = false;
+				int pos = -1;
+				BTreeLeafPage leaf = null;
+				do {
+					leaf = this.btree.getLeafPage(this.nextLeaf);
+					if(leaf == null) {
+						this.hasNextPage = false;
+						return false;
+					}
+					
 					pos = leaf.getPositionForKey(startKey);
-					if(!this.startKeyIncluded) {
-						pos++;
+					if(this.startKeyIncluded)
+						getRightPosition = true;
+					else {
 						while(pos<leaf.getNumberOfEntries() && leaf.getKey(pos).compareTo(startKey)==0) {
 							pos++;
 						}
+						if(pos<leaf.getNumberOfEntries())
+							getRightPosition = true;
+						else {
+							getRightPosition = false;
+							this.nextLeaf = leaf.getNextLeafPageNumber();
+							if(this.nextLeaf == -1) {
+								this.hasNextPage = false;
+								return false;
+							}
+							
+							//TODO: unpin or not
+							this.btree.unpinPage(leaf.getPageNumber());
+						}
 					}
-				}
+				}while(!getRightPosition);
+				
 				//now pos is the position of first matched value
 				while(pos<leaf.getNumberOfEntries()) {
 					DataField key = leaf.getKey(pos);
@@ -72,10 +89,8 @@ public class KeyIterator implements IndexResultIterator<DataField> {
 						break;
 					}
 					
-					if(this.results.get(this.results.size()-1).compareTo(key) > 0) {
-						//check duplicate element
-						this.results.add(key);
-					}
+					//TODO: allow to add duplicate or not??
+					this.results.add(key);
 					pos++;
 				}
 				//check whether next page still contain matched values
@@ -90,14 +105,18 @@ public class KeyIterator implements IndexResultIterator<DataField> {
 					}
 				}
 
-				//TODO: need unpin page??
-				this.btree.unpinPage(this.nextLeaf);
-				
 				//update next leaf page number
 				this.nextLeaf = leaf.getNextLeafPageNumber();
 				if(this.nextLeaf == -1) {
 					this.hasNextPage = false;
 				}
+				else {
+					if(this.hasNextPage)
+						this.btree.prefetchPage(this.nextLeaf);
+				}
+				
+				//TODO: need unpin page??
+				this.btree.unpinPage(leaf.getPageNumber());
 			}
 		}
 		
@@ -108,7 +127,11 @@ public class KeyIterator implements IndexResultIterator<DataField> {
 	@Override
 	public DataField next() throws IOException, IndexFormatCorruptException,
 			PageFormatException {
-		// TODO Auto-generated method stub
+		if(this.hasNext()) {
+			DataField result = this.results.get(cursor);
+			cursor++;
+			return result;
+		}
 		return null;
 	}
 

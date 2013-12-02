@@ -65,25 +65,47 @@ public class RIDIterator implements IndexResultIterator<RID> {
 					return false;
 				}
 				
+				//iterator for single key
 				if(this.stopKey == null) {
-					//iterator for single key
 					this.hasNextPage = false;
 					if(leaf.getAllsRIDsForKey(this.startKey, this.results)) {
 						this.hasNextPage = leaf.isLastKeyContinuingOnNextPage();
 					}
 				}
-				else {
-					//iterator for range key
-					int pos = 0;
-					if(leaf.getFirstKey().compareTo(startKey) < 0) {
+				//iterator for range key, find the right start position first
+				else {				
+					boolean getRightPosition = false;
+					int pos = -1;
+					do {
 						pos = leaf.getPositionForKey(startKey);
-						if(!this.startKeyIncluded) {
-							pos++;
+						
+						if(this.startKeyIncluded)
+							getRightPosition = true;
+						else {
 							while(pos<leaf.getNumberOfEntries() && leaf.getKey(pos).compareTo(startKey)==0) {
 								pos++;
 							}
+							if(pos<leaf.getNumberOfEntries())
+								getRightPosition = true;
+							else {
+								getRightPosition = false;
+								this.nextLeaf = leaf.getNextLeafPageNumber();
+								if(this.nextLeaf == -1) {
+									this.hasNextPage = false;
+									return false;
+								}
+								
+								//TODO: unpin or not
+								this.btree.unpinPage(leaf.getPageNumber());
+
+								leaf = this.btree.getLeafPage(this.nextLeaf);
+								if(leaf == null) {
+									this.hasNextPage = false;
+									return false;
+								}
+							}
 						}
-					}
+					}while(!getRightPosition);
 					//now pos is the position of first matched value
 					while(pos<leaf.getNumberOfEntries()) {
 						int compareToStopKey = leaf.getKey(pos).compareTo(stopKey);
@@ -109,14 +131,17 @@ public class RIDIterator implements IndexResultIterator<RID> {
 					}
 				}
 
-				//TODO: need unpin page??
-				this.btree.unpinPage(this.nextLeaf);
-				
 				//update next leaf page number
 				this.nextLeaf = leaf.getNextLeafPageNumber();
 				if(this.nextLeaf == -1) {
 					this.hasNextPage = false;
 				}
+				else if(this.hasNextPage) {
+					this.btree.prefetchPage(nextLeaf);
+				}
+				
+				//TODO: need unpin page??
+				this.btree.unpinPage(leaf.getPageNumber());
 			}
 		}
 		return this.cursor < this.results.size();

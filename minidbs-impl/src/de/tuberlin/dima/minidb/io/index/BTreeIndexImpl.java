@@ -33,9 +33,9 @@ public class BTreeIndexImpl implements BTreeIndex {
 		return this.schema;
 	}
 	
+	
 	public BTreeLeafPage getLeafPage(int pageNum) {
 		CacheableData data = null;
-		int headerType = -1;
 		
 		try {
 			data = bufferPool.getPageAndPin(resourceId, pageNum);
@@ -45,18 +45,17 @@ public class BTreeIndexImpl implements BTreeIndex {
 			return null;
 		}
 		
-		if(headerType != BTreeLeafPage.HEADER_TYPE_VALUE) {
+		if(this.getPageType(data) != BTreeLeafPage.HEADER_TYPE_VALUE) {
 			//TODO: need unpin??
 			bufferPool.unpinPage(resourceId, pageNum);
 			return null;
 		}
 		
-		return new BTreeLeafPage(schema, data.getBuffer());
+		return (BTreeLeafPage)data;
 	}
 	
 	public BTreeInnerNodePage getInnerNodePage(int pageNum) {
 		CacheableData data = null;
-		int headerType = -1;
 		
 		try {
 			data = bufferPool.getPageAndPin(resourceId, pageNum);
@@ -66,16 +65,20 @@ public class BTreeIndexImpl implements BTreeIndex {
 			return null;
 		}
 		
-		if(headerType != BTreeInnerNodePage.HEADER_TYPE_VALUE) {
-			//TODO: need unpin??
+		if(this.getPageType(data) != BTreeInnerNodePage.HEADER_TYPE_VALUE) {
+			//TODO: unpin or not??
 			bufferPool.unpinPage(resourceId, pageNum);
 			return null;
 		}
 		
+		return (BTreeInnerNodePage)data;
+	}
+	
+	public void prefetchPage(int pageNum) {
 		try {
-			return new BTreeInnerNodePage(schema, data.getBuffer());
-		} catch (PageFormatException e) {
-			return null;
+			this.bufferPool.prefetchPage(resourceId, pageNum);
+		} catch (BufferPoolException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -85,8 +88,7 @@ public class BTreeIndexImpl implements BTreeIndex {
 	
 	private int getPageType(CacheableData data) {
 		if(data == null) return -1;
-		byte[] buffer = data.getBuffer();
-		return IntField.getIntFromBinary(buffer, INDEX_PAGE_HEADER_TYPE_OFFSET);
+		return IntField.getIntFromBinary(data.getBuffer(), INDEX_PAGE_HEADER_TYPE_OFFSET);
 	}
 
 	@Override
@@ -94,30 +96,30 @@ public class BTreeIndexImpl implements BTreeIndex {
 			throws PageFormatException, IndexFormatCorruptException,
 			IOException {
 		CacheableData data = null;
-		BTreeInnerNodePage page = null;
 		//start from root
-		int cur = schema.getRootPageNumber();
-		int headerType = -1;
+		int page = schema.getRootPageNumber();
 		
 		do {
+			data = null;
 			try {
-				data = bufferPool.getPageAndPin(resourceId, cur);
+				data = bufferPool.getPageAndPin(resourceId, page);
 			} catch (BufferPoolException e) {
 				return new RIDIterator();
 			}
-			headerType = this.getPageType(data);
-			if(headerType == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
 				break;
 			
-			page = new BTreeInnerNodePage(schema, data.getBuffer());
-			cur = page.getChildPageForKey(key);
+			page = ((BTreeInnerNodePage)data).getChildPageForKey(key);
 			
-			//TODO: unpin page here??
-			this.unpinPage(page.getPageNumber());
+			//TODO: unpin or not??
+			this.unpinPage(data.getPageNumber());
 			
-		}while(headerType != BTreeLeafPage.HEADER_TYPE_VALUE);
-		
-		return new RIDIterator(this, cur, key);
+		}while(data != null);
+
+		if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			return new RIDIterator(this, data.getPageNumber(), key);
+		else
+			return new RIDIterator();
 	}
 
 	@Override
@@ -126,30 +128,30 @@ public class BTreeIndexImpl implements BTreeIndex {
 			throws PageFormatException, IndexFormatCorruptException,
 			IOException {
 		CacheableData data = null;
-		BTreeInnerNodePage page = null;
 		//start from root
-		int cur = schema.getRootPageNumber();
-		int headerType = -1;
+		int page = schema.getRootPageNumber();
 		
 		do {
+			data = null;
 			try {
-				data = bufferPool.getPageAndPin(resourceId, cur);
+				data = bufferPool.getPageAndPin(resourceId, page);
 			} catch (BufferPoolException e) {
 				return new RIDIterator();
 			}
-			headerType = this.getPageType(data);
-			if(headerType == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
 				break;
 			
-			page = new BTreeInnerNodePage(schema, data.getBuffer());
-			cur = page.getChildPageForKey(startKey);
+			page = ((BTreeInnerNodePage)data).getChildPageForKey(startKey);
 			
 			//TODO: unpin page here??
-			this.unpinPage(page.getPageNumber());
+			this.unpinPage(data.getPageNumber());
 			
-		}while(headerType != BTreeLeafPage.HEADER_TYPE_VALUE);
-		
-		return new RIDIterator(this, cur, startKey, stopKey, startKeyIncluded, stopKeyIncluded);
+		}while(data != null);
+
+		if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			return new RIDIterator(this, data.getPageNumber(), startKey, stopKey, startKeyIncluded, stopKeyIncluded);
+		else
+			return new RIDIterator();
 	}
 
 	@Override
@@ -158,30 +160,31 @@ public class BTreeIndexImpl implements BTreeIndex {
 			throws PageFormatException, IndexFormatCorruptException,
 			IOException {
 		CacheableData data = null;
-		BTreeInnerNodePage page = null;
 		//start from root
-		int cur = schema.getRootPageNumber();
-		int headerType = -1;
+		int page = schema.getRootPageNumber();
 		
 		do {
+			data = null;
 			try {
-				data = bufferPool.getPageAndPin(resourceId, cur);
+				data = bufferPool.getPageAndPin(resourceId, page);
 			} catch (BufferPoolException e) {
 				return new KeyIterator();
 			}
-			headerType = this.getPageType(data);
-			if(headerType == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
 				break;
 			
-			page = new BTreeInnerNodePage(schema, data.getBuffer());
-			cur = page.getChildPageForKey(startKey);
+			page = ((BTreeInnerNodePage)data).getChildPageForKey(startKey);
 			
 			//TODO: unpin page here??
-			this.unpinPage(page.getPageNumber());
+			this.unpinPage(data.getPageNumber());
 			
-		}while(headerType != BTreeLeafPage.HEADER_TYPE_VALUE);
-		
-		return new KeyIterator(this, cur, startKey, stopKey, startKeyIncluded, stopKeyIncluded);
+		}while(data != null);
+
+		if(this.getPageType(data) == BTreeLeafPage.HEADER_TYPE_VALUE) 
+			return new KeyIterator(this, page, startKey, stopKey, startKeyIncluded, stopKeyIncluded);
+		else {
+			return new KeyIterator();
+		}
 	}
 
 	@Override
@@ -196,6 +199,7 @@ public class BTreeIndexImpl implements BTreeIndex {
 
 		//traverse to leaf page, store the trace in stack
 		do {
+			data = null;
 			try {
 				data = bufferPool.getPageAndPin(resourceId, cur);
 			} catch (BufferPoolException e) {
@@ -203,17 +207,19 @@ public class BTreeIndexImpl implements BTreeIndex {
 					this.unpinPage(itr.getPageNumber());
 				}
 				stack.clear();
+				e.printStackTrace();
+				return;
 			}
 			headerType = this.getPageType(data);
 			if(headerType == BTreeLeafPage.HEADER_TYPE_VALUE) 
 				break;
 			
-			BTreeInnerNodePage page = new BTreeInnerNodePage(schema, data.getBuffer());
+			BTreeInnerNodePage page = (BTreeInnerNodePage)data;
 			stack.add(page);
 			cur = page.getChildPageForKey(key);
-		}while(headerType != BTreeLeafPage.HEADER_TYPE_VALUE);
+		}while(data != null);
 		
-		BTreeLeafPage oldLeaf = new BTreeLeafPage(schema, data.getBuffer());
+		BTreeLeafPage oldLeaf = (BTreeLeafPage)data;
 		BTreeLeafPage newLeaf = null;
 		
 		//check duplicate
@@ -223,11 +229,12 @@ public class BTreeIndexImpl implements BTreeIndex {
 		if(!oldLeaf.insertKeyRIDPair(key, rid)) {
 			//insert failed, start splitting
 			try {
-//				newLeaf = (BTreeLeafPage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.LEAF_PAGE);
-				data = this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.LEAF_PAGE);
-				newLeaf = new BTreeLeafPage(schema, data.getBuffer());
+				newLeaf = (BTreeLeafPage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.LEAF_PAGE);
 			} catch (BufferPoolException e) {
-				// TODO Auto-generated catch block
+				for(BTreeInnerNodePage itr : stack) {
+					this.unpinPage(itr.getPageNumber());
+				}
+				stack.clear();
 				e.printStackTrace();
 				return;
 			}
@@ -252,65 +259,84 @@ public class BTreeIndexImpl implements BTreeIndex {
 			DataField newKey = oldLeaf.getLastKey();
 			int newPointer = newLeaf.getPageNumber();
 			
-			while(!stack.isEmpty()) {
-				BTreeInnerNodePage oldInner = stack.remove(stack.size()-1);
-				BTreeInnerNodePage newInner = null;
-				
-				if(oldInner.insertKeyPageNumberPair(newKey, newPointer)){
-					//TODO: unpin or not
-					this.unpinPage(oldInner.getPageNumber());
-					break;
+			if(stack.isEmpty()) {
+				//reach root node, create a new root
+				BTreeInnerNodePage newRoot = null;
+				try {
+					newRoot = (BTreeInnerNodePage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
+				} catch (BufferPoolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return;
 				}
-				else {
-					//insert failed, start splitting
-					try {
-//						newInner = (BTreeInnerNodePage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
-						data = this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
-						newInner = new BTreeInnerNodePage(schema, data.getBuffer());
-					} catch (BufferPoolException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						return;
-					}
-					DataField droppedKey = oldInner.moveLastToNewPage(newInner, (oldInner.getNumberOfKeys()+1)/2 );
-					if(newKey.compareTo(droppedKey) > 0) {
-						newInner.insertKeyPageNumberPair(newKey, newPointer);
-					}
-					else {
-						oldInner.insertKeyPageNumberPair(newKey, newPointer);
-					}
+				newRoot.initRootState(oldLeaf.getLastKey(), oldLeaf.getPageNumber(), newLeaf.getPageNumber());
+				//update new root
+				schema.setRootPageNumber(newRoot.getPageNumber());
+				//TODO: unpin or not
+				this.unpinPage(newRoot.getPageNumber());
+			}
+			else {
+				while(!stack.isEmpty()) {
+					BTreeInnerNodePage oldInner = stack.remove(stack.size()-1);
+					BTreeInnerNodePage newInner = null;
 					
-					if(stack.isEmpty()) {
-						//reach root node, create a new root
-						BTreeInnerNodePage newRoot = null;
-						try {
-//							newRoot = (BTreeInnerNodePage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
-							data = this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
-							newRoot = new BTreeInnerNodePage(schema, data.getBuffer());
-						} catch (BufferPoolException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							return;
-						}
-						newRoot.initRootState(droppedKey, oldInner.getPageNumber(), newInner.getPageNumber());
-						//update new root
-						schema.setRootPageNumber(newRoot.getPageNumber());
+					if(oldInner.insertKeyPageNumberPair(newKey, newPointer)){
 						//TODO: unpin or not
-						this.unpinPage(newRoot.getPageNumber());
+						this.unpinPage(oldInner.getPageNumber());
 						break;
 					}
 					else {
-						newKey = droppedKey;
-						newPointer = newInner.getPageNumber();
+						//insert failed, start splitting
+						try {
+							newInner = (BTreeInnerNodePage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
+						} catch (BufferPoolException e) {
+							for(BTreeInnerNodePage itr : stack) {
+								this.unpinPage(itr.getPageNumber());
+							}
+							stack.clear();
+							e.printStackTrace();
+							return;
+						}
+						DataField droppedKey = oldInner.moveLastToNewPage(newInner, (oldInner.getNumberOfKeys()+1)/2 );
+						if(newKey.compareTo(droppedKey) > 0) {
+							newInner.insertKeyPageNumberPair(newKey, newPointer);
+						}
+						else {
+							oldInner.insertKeyPageNumberPair(newKey, newPointer);
+						}
+						
+						if(stack.isEmpty()) {
+							//reach root node, create a new root
+							BTreeInnerNodePage newRoot = null;
+							try {
+								newRoot = (BTreeInnerNodePage) this.bufferPool.createNewPageAndPin(resourceId, BTreeIndexPageType.INNER_NODE_PAGE);
+							} catch (BufferPoolException e) {
+								for(BTreeInnerNodePage itr : stack) {
+									this.unpinPage(itr.getPageNumber());
+								}
+								stack.clear();
+								e.printStackTrace();
+								return;
+							}
+							newRoot.initRootState(droppedKey, oldInner.getPageNumber(), newInner.getPageNumber());
+							//update new root
+							schema.setRootPageNumber(newRoot.getPageNumber());
+							//TODO: unpin or not
+							this.unpinPage(newRoot.getPageNumber());
+							break;
+						}
+						else {
+							newKey = droppedKey;
+							newPointer = newInner.getPageNumber();
+						}
 					}
+	
+					//TODO: unpin or not
+					this.unpinPage(oldInner.getPageNumber());
+					this.unpinPage(newInner.getPageNumber());
 				}
-
-				//TODO: unpin or not
-				this.unpinPage(oldInner.getPageNumber());
-				this.unpinPage(newInner.getPageNumber());
+			
 			}
-			
-			
 		}
 		
 		//TODO: unpin or not
