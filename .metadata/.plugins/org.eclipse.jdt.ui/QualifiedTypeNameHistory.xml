@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.io.cache.PageCache"/>
+<fullyQualifiedTypeName name="java.util.logging.Logger"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.io.manager.BufferPoolManagerImpl"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.io.cache.EvictedCacheEntry"/>
+<fullyQualifiedTypeName name="com.sun.naming.internal.ResourceManager"/>
+<fullyQualifiedTypeName name="de.tuberlin.dima.minidb.io.cache.CacheableData"/>
+</qualifiedTypeNameHistroy>

@@ -36,7 +36,6 @@ import de.tuberlin.dima.minidb.core.TimestampField;
 import de.tuberlin.dima.minidb.core.VarcharField;
 import de.tuberlin.dima.minidb.io.cache.PageExpiredException;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
-import de.tuberlin.dima.minidb.io.tables.TablePageImpl;
 import de.tuberlin.dima.minidb.io.tables.TupleIterator;
 import de.tuberlin.dima.minidb.io.tables.TupleRIDIterator;
 import de.tuberlin.dima.minidb.parser.Predicate.Operator;
