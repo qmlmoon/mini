@@ -238,14 +238,15 @@ public class BTreeIndexImpl implements BTreeIndex {
 				e.printStackTrace();
 				return;
 			}
-			//split the old leaf and move the second half elements to the new page
-			newLeaf.prependEntriesFromOtherPage(oldLeaf, oldLeaf.getNumberOfEntries()/2);
-			
 			//insert new key/rid pair
-			if(newLeaf.getFirstKey().compareTo(key) > 0) {
+			int pos = oldLeaf.getPositionForKey(key);
+			if(pos <= oldLeaf.getNumberOfEntries()/2) {
+				//split the old leaf and move the second half elements to the new page
+				newLeaf.prependEntriesFromOtherPage(oldLeaf, oldLeaf.getNumberOfEntries()-oldLeaf.getNumberOfEntries()/2);
 				oldLeaf.insertKeyRIDPair(key, rid);
 			}
 			else {
+				newLeaf.prependEntriesFromOtherPage(oldLeaf, oldLeaf.getNumberOfEntries()/2);
 				newLeaf.insertKeyRIDPair(key, rid);
 			}
 			//update pointers and flags
@@ -297,12 +298,38 @@ public class BTreeIndexImpl implements BTreeIndex {
 							e.printStackTrace();
 							return;
 						}
-						DataField droppedKey = oldInner.moveLastToNewPage(newInner, (oldInner.getNumberOfKeys()+1)/2 );
-						if(newKey.compareTo(droppedKey) > 0) {
-							newInner.insertKeyPageNumberPair(newKey, newPointer);
+						pos = oldInner.getInsertPositionForKey(newKey);
+						
+						DataField droppedKey = null;
+						int n = oldInner.getNumberOfKeys();
+						if(n%2 == 1) {
+							droppedKey = oldInner.moveLastToNewPage(newInner, n/2+1);
+							if(newKey.compareTo(droppedKey)>0) {
+								newInner.insertKeyPageNumberPair(newKey, newPointer);
+							}
+							else {
+								oldInner.insertKeyPageNumberPair(newKey, newPointer);
+							}
 						}
 						else {
-							oldInner.insertKeyPageNumberPair(newKey, newPointer);
+							if(pos < (n/2)) {
+								droppedKey = oldInner.moveLastToNewPage(newInner, (n/2)+1);
+								oldInner.insertKeyPageNumberPair(newKey, newPointer);
+							}
+							else if(pos > (n/2)) {
+								droppedKey = oldInner.moveLastToNewPage(newInner, (n/2));
+								newInner.insertKeyPageNumberPair(newKey, newPointer);
+							}
+							else {
+								droppedKey = oldInner.moveLastToNewPage(newInner, (n/2));
+								
+								if(droppedKey.compareTo(newKey) < 0) {
+									DataField tmp = droppedKey;
+									droppedKey = newKey;
+									newKey = tmp;
+								}
+								newInner.insertKeyPageNumberPair(newKey, newPointer);
+							}
 						}
 						
 						if(stack.isEmpty()) {
