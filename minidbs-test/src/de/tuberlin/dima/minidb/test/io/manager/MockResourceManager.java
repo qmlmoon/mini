@@ -195,6 +195,15 @@ public class MockResourceManager extends ResourceManager
 		return page;
 	}
 
+	@Override
+	public CacheableData[] readPagesFromResource(byte[][] buffers, int firstPageNumber) throws IOException {
+		CacheableData[] pages = new CacheableData[buffers.length];
+		for (int i = 0; i < buffers.length; i++) {
+			pages[i] = readPageFromResource(buffers[i], firstPageNumber+i);
+		}
+		return pages;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see de.tuberlin.dima.minidb.io.ResourceManager#writePageToResource(byte[], de.tuberlin.dima.minidb.io.cache.CacheableData)
@@ -231,6 +240,13 @@ public class MockResourceManager extends ResourceManager
 		else
 		{
 			throw new IOException("This page does not exist.");
+		}
+	}
+
+	@Override
+	public void writePagesToResource(byte[][] buffers, CacheableData[] wrappers) throws IOException {
+		for (int i = 0; i < buffers.length; i++) {
+			writePageToResource(buffers[i], wrappers[i]);
 		}
 	}
 

@@ -377,6 +377,64 @@ public class TableResourceManager extends ResourceManager
 		}
 	}
 	
+	
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.minidb.io.ResourceManager#readPageFromResource(byte[], int)
+	 */
+	@Override
+	public void writePagesToResource(byte[][] buffers, CacheableData[] wrappers) throws IOException {
+		if (Constants.DEBUG_CHECK) {
+			// check that buffers and wrappers array lengths match 
+			if (buffers.length != wrappers.length) {
+				throw new IllegalArgumentException("Unequal number of buffers and wrappers provided.");
+			}
+			
+			// check that at least one buffer is provided
+			if (buffers.length <= 0) {
+				throw new IllegalArgumentException("At least one buffer should be provided.");
+			}
+		}
+		
+		int pageNumber = wrappers[0].getPageNumber();
+		
+		if (Constants.DEBUG_CHECK) {
+			// we can ignore the wrapper, no need to use it
+			// check that the page number is within range
+			if (pageNumber < this.firstDataPageNumber) {
+				throw new IOException("Page number " + pageNumber + " is not valid. " + "First data page is " + this.firstDataPageNumber + ".");
+			}
+		
+			for (int i = 0; i < buffers.length; i++) {
+				// we can ignore the wrapper, no need to use it
+				// check that the page number is within range
+				if (wrappers[i].getPageNumber() != pageNumber + i) {
+					throw new IOException("Page number " + wrappers[i].getPageNumber() + " of page at position " + i + " is not sequential.");
+				}
+				
+				// check that we have enough space
+				if (buffers[i].length < this.pageSize) {
+					throw new IllegalArgumentException("The given buffer is too small for the specified page size (" + this.pageSize + " bytes).");
+				}
+			}
+		}
+
+		ByteBuffer[] b = new ByteBuffer[buffers.length];
+		for (int i = 0; i < buffers.length; i++) {
+			b[i] = ByteBuffer.wrap(buffers[i], 0, this.pageSize);
+		}
+		
+		// seek and write the buffer. If the position is beyond the file size,
+		// the channel will automatically increase the file length
+		try {
+			this.ioChannel.position(this.pageSize * (long) pageNumber);
+			this.ioChannel.write(b);
+		}
+		catch (IOException ioex) {
+			throw new IOException("Page sequence [" + pageNumber + ", " + (pageNumber+buffers.length-1) + "] could not be written to the table file.", ioex);
+		}
+	}
+	
+	
 	/* (non-Javadoc)
 	 * @see de.tuberlin.dima.minidb.io.ResourceManager#readPageFromResource(byte[], int)
 	 */
@@ -415,7 +473,60 @@ public class TableResourceManager extends ResourceManager
 			throw new IOException("Page could not be fetched because it is corrupted.", pfex);
 		}
 	}
+	
+	
+	/* (non-Javadoc)
+	 * @see de.tuberlin.dima.minidb.io.ResourceManager#readPageFromResource(byte[], int)
+	 */
+	@Override
+	public TablePage[] readPagesFromResource(byte[][] buffers, int firstPageNumber) throws IOException {
+		// check that at least one buffer is provided
+		if (buffers.length <= 0) {
+			throw new IllegalArgumentException("At least one buffer should be provided.");
+		}
+		
+		if (Constants.DEBUG_CHECK) {
+			// check that the page number is within range
+			if (firstPageNumber < this.firstDataPageNumber) {
+				throw new IOException("Page number " + firstPageNumber + " is not valid. " +	"First data page is " + this.firstDataPageNumber + ".");
+			}
+			
+			for (int i = 0; i < buffers.length; i++) {
+				// check that we have enough space
+				if (buffers[i].length < this.pageSize) {
+					throw new IllegalArgumentException("Buffer is not big enough to hold a page.");
+				}
+			}
+		}
+		
+		// seek and read the buffer
+		ByteBuffer[] b = new ByteBuffer[buffers.length];
+		for (int i = 0; i < buffers.length; i++) {
+			b[i] = ByteBuffer.wrap(buffers[i], 0, this.pageSize);
+		}
 
+		try {
+			this.ioChannel.position(this.pageSize * (long) firstPageNumber);
+			this.ioChannel.read(b);
+		}
+		catch (IOException ioex) {
+			throw new IOException("Page sequence [" + firstPageNumber + ", " + (firstPageNumber+buffers.length-1) + "] could not be read from table file.", ioex);
+		}
+		
+		// wrap the loaded buffers in CacheableData objects 
+		TablePage[] pages = new TablePage[buffers.length];
+		for (int i = 0; i < buffers.length; i++) {
+			try {
+				pages[i] = pageFactory.createTablePage(this.schema, buffers[i]);
+			}
+			catch (PageFormatException pfex) {
+				throw new IOException("Page could not be fetched because it is corrupted.", pfex);
+			}
+		}
+		
+		return pages;
+	}
+	
 	
 	// ------------------------------------------------------------------------
 	//                           Miscellaneous
