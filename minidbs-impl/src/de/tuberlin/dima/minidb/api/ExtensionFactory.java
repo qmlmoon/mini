@@ -11,10 +11,14 @@ import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.io.cache.PageCache;
 import de.tuberlin.dima.minidb.io.cache.PageFormatException;
 import de.tuberlin.dima.minidb.io.cache.PageSize;
+import de.tuberlin.dima.minidb.io.cache.solution.AdaptiveReplacementCache;
 import de.tuberlin.dima.minidb.io.index.BTreeIndex;
+import de.tuberlin.dima.minidb.io.index.solution.BTreeIndexImpl;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
+import de.tuberlin.dima.minidb.io.manager.solution.alexander.BufferPoolManagerImpl;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
+import de.tuberlin.dima.minidb.io.tables.solution.TablePageImpl;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -29,6 +33,7 @@ import de.tuberlin.dima.minidb.qexec.GroupByOperator;
 import de.tuberlin.dima.minidb.qexec.IndexCorrelatedLookupOperator;
 import de.tuberlin.dima.minidb.qexec.IndexLookupOperator;
 import de.tuberlin.dima.minidb.qexec.IndexScanOperator;
+import de.tuberlin.dima.minidb.qexec.IndexScanOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.InsertOperator;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
 import de.tuberlin.dima.minidb.qexec.MergeJoinOperator;
@@ -36,6 +41,7 @@ import de.tuberlin.dima.minidb.qexec.NestedLoopJoinOperator;
 import de.tuberlin.dima.minidb.qexec.PhysicalPlanOperator;
 import de.tuberlin.dima.minidb.qexec.SortOperator;
 import de.tuberlin.dima.minidb.qexec.TableScanOperator;
+import de.tuberlin.dima.minidb.qexec.TableScanOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.heap.QueryHeap;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
@@ -50,38 +56,41 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new TablePageImpl(schema, binaryPage);
 	}
 
 	@Override
 	public TablePage initTablePage(TableSchema schema, byte[] binaryPage, int newPageNumber) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new TablePageImpl(schema, binaryPage, newPageNumber);
 	}
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new AdaptiveReplacementCache(pageSize, numPages);
 	}
 
 	@Override
 	public BufferPoolManager createBufferPoolManager(Config config, Logger logger) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new BufferPoolManagerImpl(config, logger);
 	}
 
 	@Override
 	public BTreeIndex createBTreeIndex(IndexSchema schema, BufferPoolManager bufferPool, int resourceId) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new BTreeIndexImpl(schema, bufferPool, resourceId);
 	}
 
 	@Override
 	public TableScanOperator createTableScanOperator(BufferPoolManager bufferPool, TableResourceManager tableManager, int resourceId,
 			int[] producedColumnIndexes, LowLevelPredicate[] predicate, int prefetchWindowLength) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new TableScanOperatorImpl(bufferPool, tableManager, resourceId, producedColumnIndexes, predicate, prefetchWindowLength);
+
+//		return new de.tuberlin.dima.minidb.qexec.solution.TableScanOperatorImpl(bufferPool, tableManager, predicate, producedColumnIndexes, resourceId, prefetchWindowLength);
 	}
 
 	@Override
 	public IndexScanOperator createIndexScanOperator(BTreeIndex index, DataField startKey, DataField stopKey, boolean startKeyIncluded, boolean stopKeyIncluded) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		return new de.tuberlin.dima.minidb.qexec.solution.IndexScanOperatorImpl(index, startKey, startKeyIncluded, stopKey, stopKeyIncluded);
+		return new IndexScanOperatorImpl(index, startKey, stopKey, startKeyIncluded, stopKeyIncluded);
 	}
 
 	@Override
