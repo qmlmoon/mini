@@ -40,6 +40,8 @@ public class TableScanOperatorImpl implements TableScanOperator {
 	
 	@Override
 	public void open(DataTuple correlatedTuple) throws QueryExecutionException {
+		this.firstPage = this.tableManager.getFirstDataPageNumber();
+		this.lastPage = this.tableManager.getLastDataPageNumber();
 		if(firstPage > lastPage) {
 			throw new QueryExecutionException("First Page does not exist!");
 		}
