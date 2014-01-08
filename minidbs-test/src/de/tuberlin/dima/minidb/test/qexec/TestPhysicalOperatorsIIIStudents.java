@@ -522,7 +522,7 @@ public class TestPhysicalOperatorsIIIStudents {
 		DataType[] aggTypes = new DataType[] { DataType.floatType() };
 		int[] groupCols = new int[] { 2 };		
 		int[] aggColIndices = new int[] { 0 };
-		
+	
 		GroupByOperator testGroupBy = AbstractExtensionFactory.getExtensionFactory().createGroupByOperator(
 				testCustomerNationOrdersJoinSort, groupCols, aggColIndices, aggs, 
 				aggTypes, new int[]{ 0, -1 } , new int[]{ -1, 0 });
@@ -597,6 +597,7 @@ public class TestPhysicalOperatorsIIIStudents {
 		
 		while ((testTuple = testPlan.next()) != null)
 		{
+//			System.out.println(testTuple.getField(3).toString());
 			// print some info
 			counter++;
 			if (counter % 1000 == 0) {

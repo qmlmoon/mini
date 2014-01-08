@@ -26,15 +26,18 @@ import de.tuberlin.dima.minidb.qexec.FetchOperator;
 import de.tuberlin.dima.minidb.qexec.FilterCorrelatedOperator;
 import de.tuberlin.dima.minidb.qexec.FilterOperator;
 import de.tuberlin.dima.minidb.qexec.GroupByOperator;
+import de.tuberlin.dima.minidb.qexec.GroupByOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.IndexCorrelatedLookupOperator;
 import de.tuberlin.dima.minidb.qexec.IndexLookupOperator;
 import de.tuberlin.dima.minidb.qexec.IndexScanOperator;
 import de.tuberlin.dima.minidb.qexec.InsertOperator;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
 import de.tuberlin.dima.minidb.qexec.MergeJoinOperator;
+import de.tuberlin.dima.minidb.qexec.MergeJoinOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.NestedLoopJoinOperator;
 import de.tuberlin.dima.minidb.qexec.PhysicalPlanOperator;
 import de.tuberlin.dima.minidb.qexec.SortOperator;
+import de.tuberlin.dima.minidb.qexec.SortOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.TableScanOperator;
 import de.tuberlin.dima.minidb.qexec.heap.QueryHeap;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
@@ -135,19 +138,20 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 	@Override
 	public SortOperator createSortOperator(PhysicalPlanOperator child, QueryHeap queryHeap, DataType[] columnTypes, int estimatedCardinality,
 			int[] sortColumns, boolean[] columnsAscending) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new SortOperatorImpl(child, queryHeap,columnTypes, estimatedCardinality,sortColumns,columnsAscending);
 	}
 
 	@Override
 	public GroupByOperator createGroupByOperator(PhysicalPlanOperator child, int[] groupColumnIndices, int[] aggColumnIndices,
 			AggregationType[] aggregateFunctions, DataType[] aggColumnTypes, int[] groupColumnOutputPositions, int[] aggregateColumnOutputPosition) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		return new GroupByOperatorImpl(child, aggregateColumnOutputPosition, aggregateColumnOutputPosition, aggregateFunctions, aggColumnTypes, aggregateColumnOutputPosition, aggregateColumnOutputPosition);
+		return new GroupByOperatorImpl(child, groupColumnIndices, aggColumnIndices, aggregateFunctions, aggColumnTypes, groupColumnOutputPositions, aggregateColumnOutputPosition);
 	}
 
 	@Override
 	public MergeJoinOperator createMergeJoinOperator(PhysicalPlanOperator leftChild, PhysicalPlanOperator rightChild, int[] leftJoinColumns,
 			int[] rightJoinColumns, int[] columnMapLeftTuple, int[] columnMapRightTuple) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new MergeJoinOperatorImpl(leftChild,rightChild,leftJoinColumns,rightJoinColumns,columnMapLeftTuple,columnMapRightTuple);
 	}
 
 	@Override
