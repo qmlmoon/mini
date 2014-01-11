@@ -23,16 +23,22 @@ import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
 import de.tuberlin.dima.minidb.parser.SQLParser;
 import de.tuberlin.dima.minidb.qexec.DeleteOperator;
 import de.tuberlin.dima.minidb.qexec.FetchOperator;
+import de.tuberlin.dima.minidb.qexec.FetchOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.FilterCorrelatedOperator;
+import de.tuberlin.dima.minidb.qexec.FilterCorrelatedOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.FilterOperator;
+import de.tuberlin.dima.minidb.qexec.FilterOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.GroupByOperator;
 import de.tuberlin.dima.minidb.qexec.IndexCorrelatedLookupOperator;
+import de.tuberlin.dima.minidb.qexec.IndexCorrelatedLookupOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.IndexLookupOperator;
+import de.tuberlin.dima.minidb.qexec.IndexLookupOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.IndexScanOperator;
 import de.tuberlin.dima.minidb.qexec.InsertOperator;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
 import de.tuberlin.dima.minidb.qexec.MergeJoinOperator;
 import de.tuberlin.dima.minidb.qexec.NestedLoopJoinOperator;
+import de.tuberlin.dima.minidb.qexec.NestedLoopJoinOperatorImpl;
 import de.tuberlin.dima.minidb.qexec.PhysicalPlanOperator;
 import de.tuberlin.dima.minidb.qexec.SortOperator;
 import de.tuberlin.dima.minidb.qexec.TableScanOperator;
@@ -50,38 +56,45 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public TablePage createTablePage(TableSchema schema, byte[] binaryPage) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.io.tables.solution.TablePageImpl(schema, binaryPage);
 	}
 
 	@Override
 	public TablePage initTablePage(TableSchema schema, byte[] binaryPage, int newPageNumber) throws PageFormatException {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.io.tables.solution.TablePageImpl(schema, binaryPage, newPageNumber);
 	}
 
 	@Override
 	public PageCache createPageCache(PageSize pageSize, int numPages) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.io.cache.solution.AdaptiveReplacementCache(pageSize, numPages);
 	}
 
 	@Override
 	public BufferPoolManager createBufferPoolManager(Config config, Logger logger) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.io.manager.solution.alexander.BufferPoolManagerImpl(config, logger);
 	}
 
 	@Override
 	public BTreeIndex createBTreeIndex(IndexSchema schema, BufferPoolManager bufferPool, int resourceId) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.io.index.solution.BTreeIndexImpl(schema, bufferPool, resourceId);
 	}
 
 	@Override
 	public TableScanOperator createTableScanOperator(BufferPoolManager bufferPool, TableResourceManager tableManager, int resourceId,
 			int[] producedColumnIndexes, LowLevelPredicate[] predicate, int prefetchWindowLength) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.qexec.solution.TableScanOperatorImpl(bufferPool, tableManager, predicate, producedColumnIndexes, resourceId, prefetchWindowLength);
 	}
 
 	@Override
 	public IndexScanOperator createIndexScanOperator(BTreeIndex index, DataField startKey, DataField stopKey, boolean startKeyIncluded, boolean stopKeyIncluded) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new de.tuberlin.dima.minidb.qexec.solution.IndexScanOperatorImpl(index, startKey, startKeyIncluded, stopKey, stopKeyIncluded);
 	}
 
 	@Override
@@ -98,38 +111,45 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 	@Override
 	public NestedLoopJoinOperator createNestedLoopJoinOperator(PhysicalPlanOperator outerChild, PhysicalPlanOperator innerChild, JoinPredicate joinPredicate,
 			int[] columnMapOuterTuple, int[] columnMapInnerTuple) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new NestedLoopJoinOperatorImpl(outerChild, innerChild, joinPredicate, columnMapOuterTuple, columnMapInnerTuple);
 	}
 
 	@Override
 	public IndexLookupOperator getIndexLookupOperator(BTreeIndex index, DataField equalityLiteral) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationExcepion("Method not yet supported");
+		return new IndexLookupOperatorImpl(index, equalityLiteral);
 	}
 
 	@Override
 	public IndexLookupOperator getIndexScanOperatorForBetweenPredicate(BTreeIndex index, DataField lowerBound, boolean lowerIncluded, DataField upperBound,
 			boolean upperIncluded) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new IndexLookupOperatorImpl(index, lowerBound, lowerIncluded, upperBound, upperIncluded);
 	}
 
 	@Override
 	public IndexCorrelatedLookupOperator getIndexCorrelatedScanOperator(BTreeIndex index, int correlatedColumnIndex) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new IndexCorrelatedLookupOperatorImpl(index, correlatedColumnIndex);
 	}
 
 	@Override
 	public FetchOperator createFetchOperator(PhysicalPlanOperator child, BufferPoolManager bufferPool, int tableResourceId, int[] outputColumnMap) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new FetchOperatorImpl(child, bufferPool, tableResourceId, outputColumnMap);
 	}
 
 	@Override
 	public FilterOperator createFilterOperator(PhysicalPlanOperator child, LocalPredicate predicate) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new FilterOperatorImpl(child, predicate);
 	}
 
 	@Override
 	public FilterCorrelatedOperator createCorrelatedFilterOperator(PhysicalPlanOperator child, JoinPredicate correlatedPredicate) {
-		throw new UnsupportedOperationException("Method not yet supported");
+//		throw new UnsupportedOperationException("Method not yet supported");
+		return new FilterCorrelatedOperatorImpl(child, correlatedPredicate);
 	}
 
 	@Override
