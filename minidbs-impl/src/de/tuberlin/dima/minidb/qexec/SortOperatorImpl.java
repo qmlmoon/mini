@@ -1,8 +1,6 @@
 package de.tuberlin.dima.minidb.qexec;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.core.DataType;

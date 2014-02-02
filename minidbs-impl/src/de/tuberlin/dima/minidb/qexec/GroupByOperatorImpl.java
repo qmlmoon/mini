@@ -7,7 +7,6 @@ import de.tuberlin.dima.minidb.core.ArithmeticType;
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.core.DataType;
-import de.tuberlin.dima.minidb.core.IntField;
 import de.tuberlin.dima.minidb.parser.OutputColumn;
 import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
 
