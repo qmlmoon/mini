@@ -124,7 +124,7 @@ public class TestJoinOrderOptimizerStudents
 
 		LocalPredicate partSuppPred = new LocalPredicateBetween(new Column(partSuppTable, DataType.intType(), 0), createPredicate("PS.PARTKEY >= 1000"), createPredicate("PS.PARTKEY < 1005"), new IntField(1000), new IntField(1005));
 		partSuppTable.setPredicate(partSuppPred);
-		
+
 		LocalPredicate regionPred = new LocalPredicateAtom(createPredicate("R.NAME = \"AFRICA\""), new Column(regionTable, DataType.charType(25), 1), new CharField("AFRICA                   "));
 		regionTable.setPredicate(regionPred);
 		

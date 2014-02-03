@@ -16,9 +16,12 @@ import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
+import de.tuberlin.dima.minidb.optimizer.cardinality.solution.CardinalityEstimatorImpl;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
+import de.tuberlin.dima.minidb.optimizer.cost.CostEstimatorImpl;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
 import de.tuberlin.dima.minidb.optimizer.joins.JoinOrderOptimizer;
+import de.tuberlin.dima.minidb.optimizer.joins.JoinOrderOptimizerImpl;
 import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
 import de.tuberlin.dima.minidb.parser.SQLParser;
 import de.tuberlin.dima.minidb.qexec.DeleteOperator;
@@ -152,17 +155,17 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public JoinOrderOptimizer createJoinOrderOptimizer(CardinalityEstimator estimator) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new JoinOrderOptimizerImpl(estimator);
 	}
 
 	@Override
 	public CardinalityEstimator createCardinalityEstimator() {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new CardinalityEstimatorImpl();
 	}
 
 	@Override
 	public CostEstimator createCostEstimator(long readCost, long writeCost, long randomReadOverhead, long randomWriteOverhead) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return new CostEstimatorImpl();
 	}
 
 	@Override
