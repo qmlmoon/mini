@@ -1,6 +1,8 @@
 package de.tuberlin.dima.minidb.qexec.predicate;
 
 
+import org.apache.hadoop.io.Writable;
+
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 
@@ -15,7 +17,7 @@ import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
  * 
  * @author Stephan Ewen (stephan.ewen@tu-berlin.de)
  */
-public interface LocalPredicate
+public interface LocalPredicate extends Writable
 {
 	/**
 	 * Evaluates this predicate on the given tuple.

@@ -1,6 +1,10 @@
 package de.tuberlin.dima.minidb.qexec.predicate;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.parser.Predicate.Operator;
@@ -19,18 +23,18 @@ public final class JoinPredicateAtom implements JoinPredicate
 	 * The index of the column from the left hand side tuple 
 	 * used in the condition of this predicate. 
 	 */
-	private final int leftHandTupleColIndex;
+	private int leftHandTupleColIndex;
 	
 	/**
 	 * The index of the column from the right hand side tuple 
 	 * used in the condition of this predicate. 
 	 */
-	private final int rightHandTupleColIndex;
+	private int rightHandTupleColIndex;
 	
 	/**
 	 * The constants used internally for the truth evaluation.
 	 */
-	private final int c1, c2;
+	private int c1, c2;
 	
 	/**
 	 * Creates a new atomic join predicate representing the condition between two tuples
@@ -132,5 +136,33 @@ public final class JoinPredicateAtom implements JoinPredicate
 		}
 		
 		return "left.col[" + this.leftHandTupleColIndex + "] " + op + " right.col[" + this.rightHandTupleColIndex + "]";
+	}
+
+	/**
+	 * Default constructor for serialization.
+	 */
+	public JoinPredicateAtom() {}
+
+	@Override
+	public void readFields(DataInput in) throws IOException {
+		leftHandTupleColIndex = in.readInt();
+		rightHandTupleColIndex = in.readInt();
+		c1 = in.readInt();
+		c2 = in.readInt();
+	}
+
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		out.writeInt(leftHandTupleColIndex);
+		out.writeInt(rightHandTupleColIndex);
+		out.writeInt(c1);
+		out.writeInt(c2);
+	}
+
+
+	@Override
+	public boolean isEquiJoin() {
+		return this.c1 == this.c2 && this.c1 == 0;
 	}
 }

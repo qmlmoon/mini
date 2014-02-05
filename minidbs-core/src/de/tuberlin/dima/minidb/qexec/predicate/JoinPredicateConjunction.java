@@ -1,7 +1,12 @@
 package de.tuberlin.dima.minidb.qexec.predicate;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import de.tuberlin.dima.minidb.core.DataTuple;
+import de.tuberlin.dima.minidb.mapred.SerializationUtils;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 
 
@@ -64,5 +69,35 @@ public final class JoinPredicateConjunction implements JoinPredicate
 		}
 		bld.append(")");
 		return bld.toString();
+	}
+
+	/**
+	 * Default constructor for serialization.
+	 */
+	public JoinPredicateConjunction() {};
+	
+	@Override
+	public void readFields(DataInput in) throws IOException {
+		predicates = new JoinPredicate[in.readInt()];
+		for (int i=0; i<predicates.length; ++i) {
+			predicates[i] = SerializationUtils.readJoinPredicateFromStream(in);
+ 		}
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		out.writeInt(predicates.length);
+		for (int i=0; i<predicates.length; ++i) {
+			SerializationUtils.writeJoinPredicateToStream(predicates[i], out);
+		}
+	}
+
+	@Override
+	public boolean isEquiJoin() {
+		boolean result = true;
+		for (int i = 0; i < predicates.length; ++i) {
+			result &= predicates[i].isEquiJoin();
+		}
+		return result;
 	}
 }
