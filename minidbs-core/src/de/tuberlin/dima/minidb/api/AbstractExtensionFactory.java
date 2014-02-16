@@ -4,7 +4,6 @@ package de.tuberlin.dima.minidb.api;
 import java.util.logging.Logger;
 
 import de.tuberlin.dima.minidb.Config;
-import de.tuberlin.dima.minidb.DBInstance;
 import de.tuberlin.dima.minidb.catalogue.Catalogue;
 import de.tuberlin.dima.minidb.catalogue.IndexSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
@@ -17,9 +16,6 @@ import de.tuberlin.dima.minidb.io.index.BTreeIndex;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
-import de.tuberlin.dima.minidb.mapred.TableInputFormat;
-import de.tuberlin.dima.minidb.mapred.qexec.BulkProcessingOperator;
-import de.tuberlin.dima.minidb.mapred.qexec.HadoopOperator;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -258,14 +254,7 @@ public abstract class AbstractExtensionFactory
 	 * Creates a new physical query plan operator performing an insert.
 	 * 
 	 * The insert operator fetches its pages from the given buffer pool.
-	 * The resource containing the pages is specifi	abstract public TableScanOperator createTableScanOperator(
-			BufferPoolManager bufferPool,
-			TableResourceManager tableManager,
-			int resourceId,
-			int[] producedColumnIndexes,
-			LowLevelPredicate[] predicate,
-			int prefetchWindowLength
-			);ed in the given resource Id.
+	 * The resource containing the pages is specified in the given resource Id.
 	 * 
 	 * Through the TableResourceManager, the operator can determine the page
 	 * numbers of the pages relevant for the deletion:
@@ -602,23 +591,4 @@ public abstract class AbstractExtensionFactory
 	 * @param costEstimator The cost estimator (for physical operators).
 	 */
 	abstract public PhysicalPlanGenerator createPhysicalPlanGenerator(Catalogue catalogue, CardinalityEstimator cardEstimator, CostEstimator costEstimator);
-
-	/**
-	 * Creates an instance of the TableInputFormat that is used to pass tables into Hadoop.
-	 */
-	abstract public Class<? extends TableInputFormat> getTableInputFormat();
-	
-	/**
-	 * Creates an instance of a block processing table scan operator.
-	 * 
-	 * @param instance
-	 * @param child
-	 * @param predicate
-	 * @return
-	 */
-	abstract public HadoopOperator<?, ?> createHadoopTableScanOperator(
-			DBInstance instance,
-			BulkProcessingOperator child,
-			LocalPredicate predicate
-			);
 }

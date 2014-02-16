@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import de.tuberlin.dima.minidb.Config;
-import de.tuberlin.dima.minidb.DBInstance;
 import de.tuberlin.dima.minidb.catalogue.Catalogue;
 import de.tuberlin.dima.minidb.catalogue.IndexSchema;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
@@ -18,9 +17,6 @@ import de.tuberlin.dima.minidb.io.index.BTreeIndex;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
-import de.tuberlin.dima.minidb.mapred.TableInputFormat;
-import de.tuberlin.dima.minidb.mapred.qexec.BulkProcessingOperator;
-import de.tuberlin.dima.minidb.mapred.qexec.HadoopOperator;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -387,33 +383,6 @@ public final class LayeredExtensionFactory extends AbstractExtensionFactory {
 		for (AbstractExtensionFactory factory: this.factories) {
 			try {
 				return factory.createPhysicalPlanGenerator(catalogue, cardEstimator, costEstimator);
-			} catch (UnsupportedOperationException e) {
-				// ignore exception
-			}
-		}
-		throw new UnsupportedOperationException("Method not yet supported");
-	}
-
-	@Override
-	public Class<? extends TableInputFormat> getTableInputFormat() {
-		for (AbstractExtensionFactory factory: this.factories) {
-			try {
-				return factory.getTableInputFormat();
-			} catch (UnsupportedOperationException e) {
-				// ignore exception
-			}
-		}
-		throw new UnsupportedOperationException("Method not yet supported");
-	}
-
-	@Override
-	public HadoopOperator<?, ?> createHadoopTableScanOperator(
-			DBInstance instance, BulkProcessingOperator child,
-			LocalPredicate predicate) {
-		for (AbstractExtensionFactory factory: this.factories) {
-			try {
-				return factory.createHadoopTableScanOperator(
-						instance, child, predicate);
 			} catch (UnsupportedOperationException e) {
 				// ignore exception
 			}

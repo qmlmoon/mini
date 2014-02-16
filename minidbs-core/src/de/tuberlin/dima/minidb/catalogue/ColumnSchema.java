@@ -183,14 +183,4 @@ public class ColumnSchema
 	{
 		return new ColumnSchema(name, type, nullable, unique);
 	}
-	
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof ColumnSchema)) return false;
-		ColumnSchema other = (ColumnSchema) o;
-		// Ensure that both column name and type are identical.
-		boolean equals = columnName.equals(other.columnName);
-		equals &= (dataType.getBasicType().ordinal() == other.dataType.getBasicType().ordinal());
-		return equals;		
-	}
 }

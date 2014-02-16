@@ -1,12 +1,7 @@
 package de.tuberlin.dima.minidb.qexec.predicate;
 
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import de.tuberlin.dima.minidb.core.DataTuple;
-import de.tuberlin.dima.minidb.mapred.SerializationUtils;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 
 
@@ -81,27 +76,5 @@ public final class LocalPredicateConjunction implements LocalPredicate
 		}
 		bld.append(")");
 		return bld.toString();
-	}
-
-	/**
-	 * Default constructor for serialization.
-	 */
-	public LocalPredicateConjunction() {};
-
-	@Override
-	public void readFields(DataInput in) throws IOException {
-		lps = new LocalPredicate[in.readInt()];
-		for (int i=0; i<lps.length; ++i) {
-			lps[i] = SerializationUtils.readLocalPredicateFromStream(in);
-		}
-	}
-
-
-	@Override
-	public void write(DataOutput out) throws IOException {
-		out.writeInt(lps.length);
-		for (int i=0; i<lps.length; ++i) {
-			SerializationUtils.writeLocalPredicateToStream(lps[i], out);
-		}
 	}
 }

@@ -1,13 +1,8 @@
 package de.tuberlin.dima.minidb.qexec;
 
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
-import de.tuberlin.dima.minidb.mapred.SerializationUtils;
 import de.tuberlin.dima.minidb.parser.Predicate.Operator;
 import de.tuberlin.dima.minidb.qexec.predicate.LocalPredicate;
 
@@ -23,17 +18,17 @@ public final class LowLevelPredicate implements LocalPredicate
 	/**
 	 * The literal in the condition of this predicate.
 	 */
-	private DataField literal;
+	private final DataField literal;
 	
 	/**
 	 * The index of the column used in the condition of this predicate. 
 	 */
-	private int colIndex;
+	private final int colIndex;
 
 	/**
 	 * The constants used internally for the truth evaluation.
 	 */
-	private int c1, c2;
+	private final int c1, c2;
 	
 	/**
 	 * Creates a new atomic boolean predicate representing the condition given
@@ -227,32 +222,5 @@ public final class LowLevelPredicate implements LocalPredicate
 		}
 		
 		return "col[" + this.colIndex + "] " + op + " " + this.literal;
-	}
-
-	/**
-	 * Default constructor used for serialization.
-	 */
-	public LowLevelPredicate() {};
-	
-	/**
-	 * Read constants from a stream.
-	 */
-	@Override
-	public void readFields(DataInput in) throws IOException {
-		this.literal = SerializationUtils.readDataFieldFromStream(in);
-		this.colIndex = in.readInt();
-		this.c1 = in.readInt();
-		this.c2 = in.readInt();
-	}
-
-	/**
-	 * Write constants to a stream.
-	 */
-	@Override
-	public void write(DataOutput out) throws IOException {
-		SerializationUtils.writeDataFieldToStream(this.literal, out);
-		out.writeInt(this.colIndex);
-		out.writeInt(this.c1);
-		out.writeInt(this.c2);
 	}
 }
