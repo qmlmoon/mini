@@ -1,7 +1,14 @@
 package de.tuberlin.dima.minidb.core;
 
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Arrays;
+
+import org.apache.hadoop.io.WritableComparable;
+
+import de.tuberlin.dima.minidb.mapred.SerializationUtils;
 
 
 /**
@@ -9,7 +16,7 @@ import java.util.Arrays;
  * 
  * @author Stephan Ewen (stephan.ewen@tu-berlin.de)
  */
-public final class DataTuple
+public final class DataTuple implements WritableComparable<DataTuple>
 {
 	
 	/**
@@ -17,6 +24,7 @@ public final class DataTuple
 	 */
 	private DataField[] fields;
 	
+	public DataTuple() {};	// Empty constructor for serialization purposes.
 	
 	/**
 	 * Creates a new empty tuple that may hold the given number of fields.
@@ -39,6 +47,17 @@ public final class DataTuple
 		System.arraycopy(fields, 0, this.fields, 0, fields.length);
 	}
 	
+	/**
+	 * Assigns the content of the passed tuple to this tuple.
+	 * 
+	 * @param tuple
+	 */
+	public void assign(DataTuple tuple) {
+		if (this.getNumberOfFields() != tuple.getNumberOfFields()) {
+			this.fields = new DataField[getNumberOfFields()];
+		}
+		System.arraycopy(fields, 0, this.fields, 0, fields.length);
+	}
 	
 	/**
 	 * Gets the number of fields in the tuple.
@@ -118,6 +137,44 @@ public final class DataTuple
 		}
 		bld.append(')');
 		return bld.toString();
+	}
+
+	// Required for MapReduce serialization.
+	@Override
+	public void readFields(DataInput in) throws IOException {
+		int nr_of_fields = in.readInt();
+		if (fields == null || fields.length != nr_of_fields) {
+			fields = new DataField[nr_of_fields];
+		}
+		// Next, rebuild the data fields.
+		for (int i=0; i<getNumberOfFields(); ++i) {
+			fields[i] = SerializationUtils.readDataFieldFromStream(in);
+		}
+	}
+
+	@Override
+	public void write(DataOutput out) throws IOException {
+		// First, write the number of fields.
+		out.writeInt(getNumberOfFields());
+		// Now serialize the single fields as (type, size, content) triplets.
+		for (int i=0; i<getNumberOfFields(); ++i) {
+			SerializationUtils.writeDataFieldToStream(fields[i], out);
+		}
+	}
+
+	@Override
+	/**
+	 * Simple comparator to enable using DataTuples as Keys.
+	 */
+	public int compareTo(DataTuple tuple) {
+		if (fields.length != tuple.fields.length) {
+			return fields.length < tuple.fields.length ? -1 : 1;
+		}
+		for (int i=0; i<fields.length; ++i) {
+			int res = fields[i].compareTo(tuple.fields[i]);
+			if (res != 0) return res;
+		}
+		return 0;
 	}
 
 }

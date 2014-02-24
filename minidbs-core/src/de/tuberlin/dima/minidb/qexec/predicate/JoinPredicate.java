@@ -1,6 +1,8 @@
 package de.tuberlin.dima.minidb.qexec.predicate;
 
 
+import org.apache.hadoop.io.Writable;
+
 import de.tuberlin.dima.minidb.core.DataTuple;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
 
@@ -16,7 +18,7 @@ import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
  * 
  * @author Helko Glathe, Stephan Ewen (stephan.ewen@tu-berlin.de)
  */
-public interface JoinPredicate
+public interface JoinPredicate extends Writable
 {
 	/**
 	 * Evaluates this predicate on the given tuple.
@@ -30,4 +32,11 @@ public interface JoinPredicate
 	 */
 	public boolean evaluate(DataTuple leftHandSide, DataTuple rightHandSide)
 	throws QueryExecutionException;
+	
+	/**
+	 * Returns if this is an equi join predicate.
+	 * 
+	 * @return
+	 */
+	public boolean isEquiJoin();
 }
