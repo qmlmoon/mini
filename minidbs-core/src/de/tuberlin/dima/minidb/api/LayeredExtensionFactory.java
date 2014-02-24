@@ -396,6 +396,7 @@ public final class LayeredExtensionFactory extends AbstractExtensionFactory {
 
 	@Override
 	public Class<? extends TableInputFormat> getTableInputFormat() {
+		System.out.println(this.factories.size());
 		for (AbstractExtensionFactory factory: this.factories) {
 			try {
 				return factory.getTableInputFormat();

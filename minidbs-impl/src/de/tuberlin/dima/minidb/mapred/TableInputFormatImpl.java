@@ -18,7 +18,7 @@ import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
 
 public class TableInputFormatImpl extends TableInputFormat{
 
-	
+
 	@Override
 	public RecordReader<Text, DataTuple> createRecordReader(InputSplit split,
 			TaskAttemptContext context) throws IOException,

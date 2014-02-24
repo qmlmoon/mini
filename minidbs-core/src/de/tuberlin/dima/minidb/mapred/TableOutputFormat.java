@@ -123,7 +123,7 @@ public class TableOutputFormat extends OutputFormat<Writable, DataTuple> {
 			private int[] pageNumbers = new int[batchSize];
 			
 			// List of currently active worker threads.
-			List<Thread> ioThreads = new LinkedList<>();
+			List<Thread> ioThreads = new LinkedList<Thread>();
 			
 			private TablePage activePage = null;
 			
