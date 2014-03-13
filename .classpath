@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="minidbs-test/src/|minidbs-test/src/|minidbs-impl/src/|minidbs-impl/src/|minidbs-core/src/|minidbs-core/src/|minidbs-testdata/resources/|minidbs-testdata/resources/" kind="src" path=""/>
+	<classpathentry kind="src" path="minidbs-test/src"/>
+	<classpathentry kind="src" path="minidbs-impl/src"/>
+	<classpathentry kind="src" path="minidbs-core/src"/>
+	<classpathentry kind="src" path="minidbs-testdata/resources"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
