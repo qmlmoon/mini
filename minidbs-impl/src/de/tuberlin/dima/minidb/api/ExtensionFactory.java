@@ -1,5 +1,6 @@
 package de.tuberlin.dima.minidb.api;
 
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import de.tuberlin.dima.minidb.Config;
@@ -17,8 +18,10 @@ import de.tuberlin.dima.minidb.io.manager.BufferPoolManager;
 import de.tuberlin.dima.minidb.io.tables.TablePage;
 import de.tuberlin.dima.minidb.io.tables.TableResourceManager;
 import de.tuberlin.dima.minidb.mapred.TableInputFormat;
+import de.tuberlin.dima.minidb.mapred.TableInputFormatImpl;
 import de.tuberlin.dima.minidb.mapred.qexec.BulkProcessingOperator;
 import de.tuberlin.dima.minidb.mapred.qexec.HadoopOperator;
+import de.tuberlin.dima.minidb.mapred.qexec.ScanOperator;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -186,14 +189,20 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 	
 	@Override
 	public Class<? extends TableInputFormat> getTableInputFormat() {
-		throw new UnsupportedOperationException("Method not yet supported");
+		return TableInputFormatImpl.class;
 	}
 
 	@Override
 	public HadoopOperator<?, ?> createHadoopTableScanOperator(
 			DBInstance instance, BulkProcessingOperator child,
 			LocalPredicate predicate) {
-		throw new UnsupportedOperationException("Method not yet supported");
+		try {
+			return new ScanOperator(instance, child, predicate);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	@Override
