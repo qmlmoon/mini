@@ -165,4 +165,12 @@ public final class JoinPredicateAtom implements JoinPredicate
 	public boolean isEquiJoin() {
 		return this.c1 == this.c2 && this.c1 == 0;
 	}
+	
+	public int getLeftJoinColumn() {
+		return leftHandTupleColIndex;
+	}
+	
+	public int getRightJoinColumn() {
+		return rightHandTupleColIndex;
+	}
 }

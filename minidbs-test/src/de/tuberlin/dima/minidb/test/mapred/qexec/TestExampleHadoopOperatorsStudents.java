@@ -88,7 +88,7 @@ public class TestExampleHadoopOperatorsStudents {
 		Assert.assertTrue(op.run());
 		
 		// And make sure that the output is as expected.
-		Assert.assertTrue(TestUtils.compareTables(dbInstance, "lineitem", op.getResultTableName()));
+		TestUtils.compareTables(dbInstance, "lineitem", op.getResultTableName());
 	}
 	
 	@Test
@@ -103,7 +103,7 @@ public class TestExampleHadoopOperatorsStudents {
 		Assert.assertTrue(op.run());
 		
 		// And make sure that the output is as expected.
-		Assert.assertTrue(TestUtils.compareTables(dbInstance, "lineitem", op.getResultTableName()));
+		TestUtils.compareTables(dbInstance, "lineitem", op.getResultTableName());
 	}
 	
 	@Test

@@ -103,7 +103,7 @@ public class TestHadoopIntegrationStudents {
 	    Assert.assertTrue(job.waitForCompletion(true));
 	    
 	    // And ensure that the output is identical.
-	    Assert.assertTrue(TestUtils.compareTables(this.dbInstance, table, dummyTable));
+	    TestUtils.compareTables(this.dbInstance, table, dummyTable);
 	}
 	
 	/**

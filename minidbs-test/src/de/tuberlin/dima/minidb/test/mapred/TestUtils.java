@@ -4,17 +4,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.collections.Bag;
 import org.apache.commons.collections.bag.HashBag;
+import org.junit.Assert;
 
 import de.tuberlin.dima.minidb.DBInstance;
 import de.tuberlin.dima.minidb.catalogue.TableDescriptor;
 import de.tuberlin.dima.minidb.catalogue.TableSchema;
+import de.tuberlin.dima.minidb.core.BasicType;
+import de.tuberlin.dima.minidb.core.DataField;
 import de.tuberlin.dima.minidb.core.DataTuple;
+import de.tuberlin.dima.minidb.core.DoubleField;
+import de.tuberlin.dima.minidb.core.FloatField;
 import de.tuberlin.dima.minidb.io.cache.PageExpiredException;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolException;
 import de.tuberlin.dima.minidb.io.tables.PageTupleAccessException;
@@ -122,7 +129,7 @@ public class TestUtils {
 	}
 	
 	/**
-	 * Convenience funtion to materialize the provided query plan, hash each
+	 * Convenience function to materialize the provided query plan, hash each
 	 * tuple and insert it into a bag.
 	 * 
 	 * @param root
@@ -148,6 +155,20 @@ public class TestUtils {
 		return result;
 	}
 	
+	public static List<DataTuple> readQueryPlanToList(
+			PhysicalPlanOperator root) throws QueryExecutionException {
+		List<DataTuple> result = new LinkedList<DataTuple>();
+		
+		root.open(null);
+		DataTuple tuple;
+		while ((tuple = root.next()) != null) {
+			result.add(tuple);
+		}
+		root.close();
+		
+		return new ArrayList<DataTuple>(result);
+	}
+	
 	/**
 	 * Convenience function to read a complete relation into a list of data tuples.
 	 * 
@@ -157,7 +178,9 @@ public class TestUtils {
 	 * @throws PageExpiredException
 	 * @throws PageTupleAccessException
 	 */
-	public static List<DataTuple> readTableToList(TableDescriptor table) throws IOException, PageExpiredException, PageTupleAccessException {
+	public static List<DataTuple> readTableToList(TableDescriptor table) 
+			throws IOException, PageExpiredException, 
+				   PageTupleAccessException {
 		List<DataTuple> result = new LinkedList<DataTuple>();
 		
 		// Open the resource manager and allocate a page buffer.
@@ -177,8 +200,9 @@ public class TestUtils {
 				result.add(it.next());
 			}
 		}
-		return result;
+		return new ArrayList<DataTuple>(result);
 	}
+	
 	
 	/**
 	 * Helper function to compare two tables for equality.
@@ -186,42 +210,80 @@ public class TestUtils {
 	 * @param instance
 	 * @param table1
 	 * @param table2
-	 * @return True if both tables exist and contain the same tuples, false otherwise.
 	 * @throws IOException 
 	 * @throws PageTupleAccessException 
 	 * @throws PageExpiredException 
 	 */
-	public static boolean compareTables(DBInstance instance, String table1, String table2) throws PageExpiredException, PageTupleAccessException, IOException {
+	public static void compareTables(DBInstance instance, String table1, 
+			String table2) throws PageExpiredException, 
+								  PageTupleAccessException, IOException {
 		// Fetch the tables.
 		TableDescriptor desc1 = instance.getCatalogue().getTable(table1);
 		TableDescriptor desc2 = instance.getCatalogue().getTable(table2);
-		if (desc1 == null || desc2 == null)
-			return false;
+		Assert.assertNotNull(desc1);
+		Assert.assertNotNull(desc2);
 		// First, compare the table schemas.
 		TableSchema schema1 = desc1.getSchema();
 		TableSchema schema2 = desc2.getSchema();
-		if (schema1.getNumberOfColumns() != schema2.getNumberOfColumns())
-			return false;
+		Assert.assertEquals(schema1.getNumberOfColumns(), schema2.getNumberOfColumns());
 		for (int i = 0; i < schema1.getNumberOfColumns(); ++i) {
-			if (!schema1.getColumn(i).equals(schema2.getColumn(i)))
-				return false;
+			Assert.assertEquals(schema1.getColumn(i), schema2.getColumn(i));
 		}
 		// Now compare the actual table content (for now we only do the 
 		// comparison hash-based).
 		Bag bag1 = readTableToHashBag(desc1);
 		Bag bag2 = readTableToHashBag(desc2);
-		return bag1.equals(bag2);
+		Assert.assertEquals(bag1, bag2);
 	}
 	
-	public static boolean compareTableToQueryPlan(DBInstance instance, 
-			String table, PhysicalPlanOperator root) throws PageExpiredException, PageTupleAccessException, IOException, QueryExecutionException {
+	/**
+	 * Compare the output of a physical plan to a materialized table.
+	 * 
+	 * @param instance
+	 * @param table
+	 * @param plan
+	 * @throws PageExpiredException
+	 * @throws IOException
+	 * @throws PageTupleAccessException
+	 * @throws QueryExecutionException
+	 */
+	public static void compareTableToQueryPlan(DBInstance instance, 
+			String table, PhysicalPlanOperator plan) 
+					throws PageExpiredException, IOException, 
+					       PageTupleAccessException, QueryExecutionException {
 		TableDescriptor desc = instance.getCatalogue().getTable(table);
-
-		Bag bag1 = readTableToHashBag(desc);
-		Bag bag2 = readQueryPlanToHashBag(root);
+		Assert.assertNotNull(desc);
+		// Now read the both the table and the operator into lists.
+		List<DataTuple> table_list = readTableToList(desc);
+		List<DataTuple> plan_list = readQueryPlanToList(plan);
+		Assert.assertEquals(table_list.size(), plan_list.size());
+		// Sort both to ensure they have the same order.
+		Collections.sort(table_list);
+		Collections.sort(plan_list);
 		
-		return bag1.equals(bag2);
+		for (int i=0; i<table_list.size(); ++i) {
+			// Compare each field of the Datatuples individually.
+			Assert.assertEquals(table_list.get(i).getNumberOfFields(),
+					plan_list.get(i).getNumberOfFields());
+			for (int j=0; j<table_list.get(i).getNumberOfFields(); ++j) {
+				DataField field1 = table_list.get(i).getField(j);
+				DataField field2 = plan_list.get(i).getField(j);
+				Assert.assertEquals(field1.getBasicType(),
+						field2.getBasicType());
+				if (field1.getBasicType() == BasicType.DOUBLE) {
+					Assert.assertEquals(
+							((DoubleField)field1).asDouble(),
+							((DoubleField)field2).asDouble(),
+							1.0f);
+				} else if (field1.getBasicType() == BasicType.FLOAT) {
+					Assert.assertEquals(
+							((FloatField)field1).asDouble(),
+							((FloatField)field2).asDouble(),
+							1.0f);					
+				} else {
+					Assert.assertEquals(field1, field2);
+				}
+			}
+		}
 	}
-	
-	
 }

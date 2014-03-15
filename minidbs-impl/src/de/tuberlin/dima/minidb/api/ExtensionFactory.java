@@ -195,4 +195,13 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 			LocalPredicate predicate) {
 		throw new UnsupportedOperationException("Method not yet supported");
 	}
+
+	@Override
+	public HadoopOperator<?,?> createHadoopGroupByOperator(DBInstance instance,
+			BulkProcessingOperator child, int[] groupColumnIndices,
+			int[] aggColumnIndices, AggregationType[] aggregateFunctions,
+			DataType[] aggColumnTypes, int[] groupColumnOutputPositions,
+			int[] aggregateColumnOutputPosition) {
+		throw new UnsupportedOperationException("Method not yet supported");
+	}
 }

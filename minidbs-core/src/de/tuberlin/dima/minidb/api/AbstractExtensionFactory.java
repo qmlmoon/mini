@@ -547,7 +547,8 @@ public abstract class AbstractExtensionFactory
 	 *     }
 	 * }
 	 * </code>
-	 * 
+	 * nt[] aggregateColumnOutputPosition) {
+		throw new UnsupportedOperationException("Method not yet supported");
 	 * @param leftChild The left operator producing tuples to be joined.
 	 * @param rightChild The right operator producing tuples to be joined.
 	 * @param leftJoinColumns The columns of the left tuple to be joined.
@@ -609,16 +610,27 @@ public abstract class AbstractExtensionFactory
 	abstract public Class<? extends TableInputFormat> getTableInputFormat();
 	
 	/**
-	 * Creates an instance of a block processing table scan operator.
+	 * Creates an instance of a Hadoop table scan operator.
 	 * 
 	 * @param instance
-	 * @param child
-	 * @param predicate
-	 * @return
+	 * @param child Operator that produces the input for this operator.
+	 * @param predicate	Predicate that will be applied to the input.
 	 */
 	abstract public HadoopOperator<?, ?> createHadoopTableScanOperator(
 			DBInstance instance,
 			BulkProcessingOperator child,
-			LocalPredicate predicate
-			);
+			LocalPredicate predicate);
+	
+	/**
+	 * Creates an instance of a Hadoop Group-By operator.
+	 * 
+	 * For the parameter explanation see {@link createGroupByOperator}.
+	 */
+	abstract public HadoopOperator<?, ?> createHadoopGroupByOperator(
+			DBInstance instance,
+			BulkProcessingOperator child,
+			int[] groupColumnIndices, int[] aggColumnIndices,
+			OutputColumn.AggregationType[] aggregateFunctions,
+			DataType[] aggColumnTypes, int[] groupColumnOutputPositions, 
+			int[] aggregateColumnOutputPosition);
 }

@@ -100,4 +100,8 @@ public final class JoinPredicateConjunction implements JoinPredicate
 		}
 		return result;
 	}
+	
+	public JoinPredicate[] getConjuncts() {
+		return predicates;
+	}
 }

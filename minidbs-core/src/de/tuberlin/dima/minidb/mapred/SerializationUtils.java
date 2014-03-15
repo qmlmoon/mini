@@ -14,6 +14,7 @@ import de.tuberlin.dima.minidb.core.BasicType;
 import de.tuberlin.dima.minidb.core.BigIntField;
 import de.tuberlin.dima.minidb.core.CharField;
 import de.tuberlin.dima.minidb.core.DataField;
+import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.core.DateField;
 import de.tuberlin.dima.minidb.core.DoubleField;
 import de.tuberlin.dima.minidb.core.FloatField;
@@ -23,6 +24,7 @@ import de.tuberlin.dima.minidb.core.SmallIntField;
 import de.tuberlin.dima.minidb.core.TimeField;
 import de.tuberlin.dima.minidb.core.TimestampField;
 import de.tuberlin.dima.minidb.core.VarcharField;
+import de.tuberlin.dima.minidb.parser.OutputColumn.AggregationType;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicate;
 import de.tuberlin.dima.minidb.qexec.predicate.JoinPredicateAtom;
@@ -221,6 +223,79 @@ public class SerializationUtils {
 		return array;
 	}
 
+	/**
+	 * Serialize an AggregationType array to a string.
+	 * @throws IOException 
+	 * 
+	 */
+	public static String writeAggregationTypeArrayToString(
+			AggregationType[] array) throws IOException {
+		ByteArrayOutputStream byte_stream = new ByteArrayOutputStream(4 + array.length * 4);
+		DataOutputStream out = new DataOutputStream(byte_stream);
+		out.writeInt(array.length);
+		for (int i=0; i<array.length; ++i) {
+			out.writeInt(array[i].ordinal());
+		}
+		return new String(Base64.encodeBase64(byte_stream.toByteArray()));
+	}
+	
+	/**
+	 * De-serialize an AggregationType array from a string.
+	 *
+	 * @param s
+	 * @return
+	 * @throws IOException
+	 */
+	public static AggregationType[] readAggregationTypeArrayFromString(String s) 
+			throws IOException {
+		if (s == null || s.isEmpty()) return null;
+		DataInput in = new DataInputStream(
+				new ByteArrayInputStream(Base64.decodeBase64(s)));
+		AggregationType[] array = new AggregationType[in.readInt()];
+		for (int i=0; i<array.length; ++i) {
+			array[i] = AggregationType.values()[in.readInt()];
+		}
+		return array;
+	}
+	
+	/**
+	 * Serialize a DataType array to a string.
+	 * 
+	 * @throws IOException 
+	 * 
+	 */
+	public static String writeDataTypeArrayToString(
+			DataType[] array) throws IOException {
+		ByteArrayOutputStream byte_stream = new ByteArrayOutputStream(4 + array.length * 4);
+		DataOutputStream out = new DataOutputStream(byte_stream);
+		out.writeInt(array.length);
+		for (int i=0; i<array.length; ++i) {
+			out.writeInt(array[i].getBasicType().ordinal());
+			out.writeInt(array[i].getLength());
+		}
+		return new String(Base64.encodeBase64(byte_stream.toByteArray()));
+	}
+	
+	/**
+	 * De-serialize an AggregationType array from a string.
+	 *
+	 * @param s
+	 * @return
+	 * @throws IOException
+	 */
+	public static DataType[] readDataTypeArrayFromString(String s) 
+			throws IOException {
+		if (s == null || s.isEmpty()) return null;
+		DataInput in = new DataInputStream(
+				new ByteArrayInputStream(Base64.decodeBase64(s)));
+		DataType[] array = new DataType[in.readInt()];
+		for (int i=0; i<array.length; ++i) {
+			BasicType type = BasicType.values()[in.readInt()];
+			int length = in.readInt();
+			array[i] = DataType.get(type, length);
+		};
+		return array;
+	}
 	
 	/**
 	 * Serialize a Datafield into a stream.

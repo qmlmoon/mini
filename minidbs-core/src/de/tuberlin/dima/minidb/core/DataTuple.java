@@ -53,10 +53,11 @@ public final class DataTuple implements WritableComparable<DataTuple>
 	 * @param tuple
 	 */
 	public void assign(DataTuple tuple) {
-		if (this.getNumberOfFields() != tuple.getNumberOfFields()) {
-			this.fields = new DataField[getNumberOfFields()];
+		if (this.fields == null || 
+				this.getNumberOfFields() < tuple.getNumberOfFields()) {
+			this.fields = new DataField[tuple.getNumberOfFields()];
 		}
-		System.arraycopy(fields, 0, this.fields, 0, fields.length);
+		System.arraycopy(tuple.fields, 0, this.fields, 0, tuple.fields.length);
 	}
 	
 	/**
@@ -175,6 +176,14 @@ public final class DataTuple implements WritableComparable<DataTuple>
 			if (res != 0) return res;
 		}
 		return 0;
+	}
+	
+	public DataTuple clone() {
+		DataTuple newTuple = new DataTuple(this.fields.length);
+		for (int i=0; i<fields.length; ++i) {
+			newTuple.fields[i] = this.fields[i].clone();
+		}
+		return newTuple;
 	}
 
 }

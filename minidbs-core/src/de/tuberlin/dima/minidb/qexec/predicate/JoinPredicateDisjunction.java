@@ -95,6 +95,6 @@ public final class JoinPredicateDisjunction implements JoinPredicate
 	
 	@Override
 	public boolean isEquiJoin() {
-		return predicates.length == 1 && predicates[0].isEquiJoin();
+		return false;
 	}
 }

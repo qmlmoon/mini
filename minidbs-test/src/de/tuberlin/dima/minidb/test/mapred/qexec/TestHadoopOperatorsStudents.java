@@ -11,16 +11,21 @@ import org.junit.Test;
 import de.tuberlin.dima.minidb.DBInstance;
 import de.tuberlin.dima.minidb.api.AbstractExtensionFactory;
 import de.tuberlin.dima.minidb.catalogue.TableDescriptor;
+import de.tuberlin.dima.minidb.core.DataType;
 import de.tuberlin.dima.minidb.core.IntField;
 import de.tuberlin.dima.minidb.io.cache.PageExpiredException;
 import de.tuberlin.dima.minidb.io.manager.BufferPoolException;
 import de.tuberlin.dima.minidb.io.tables.PageTupleAccessException;
 import de.tuberlin.dima.minidb.mapred.qexec.BulkProcessingOperator;
 import de.tuberlin.dima.minidb.mapred.qexec.TableInputOperator;
+import de.tuberlin.dima.minidb.parser.OutputColumn;
 import de.tuberlin.dima.minidb.parser.Predicate.Operator;
 import de.tuberlin.dima.minidb.qexec.LowLevelPredicate;
+import de.tuberlin.dima.minidb.qexec.PhysicalPlanOperator;
 import de.tuberlin.dima.minidb.qexec.QueryExecutionException;
-import de.tuberlin.dima.minidb.qexec.TableScanOperator;
+import de.tuberlin.dima.minidb.qexec.solution.GroupByOperatorImpl;
+import de.tuberlin.dima.minidb.qexec.solution.SortOperatorImpl;
+import de.tuberlin.dima.minidb.qexec.solution.TableScanOperatorImpl;
 import de.tuberlin.dima.minidb.test.mapred.TestHadoopIntegrationStudents;
 import de.tuberlin.dima.minidb.test.mapred.TestUtils;
 
@@ -72,20 +77,19 @@ public class TestHadoopOperatorsStudents {
 		}
 	}
 	
-	public void testScanOperator(String table, LowLevelPredicate predicate) throws IOException, BufferPoolException, PageExpiredException, PageTupleAccessException, QueryExecutionException {
+	public void testScanOperator(String table, LowLevelPredicate predicate)
+			throws IOException, BufferPoolException, PageExpiredException, 
+			       PageTupleAccessException, QueryExecutionException {
 		// First, open the table to get the descriptor.
 		TableDescriptor desc = dbInstance.getCatalogue().getTable(table);
-		
-		LowLevelPredicate predicates[] = new LowLevelPredicate[1];
-		predicates[0] = predicate;
 		
 		// Build a local query plan.
 		int columnIndexes[] = new int[desc.getSchema().getNumberOfColumns()];
 		for (int i=0; i<columnIndexes.length; ++i) columnIndexes[i] = i;
-		TableScanOperator root = AbstractExtensionFactory.
-				getExtensionFactory().createTableScanOperator(
+		TableScanOperatorImpl referencePlan = new TableScanOperatorImpl(
 						dbInstance.getBufferPool(), desc.getResourceManager(), 
-						desc.getResourceId(), columnIndexes, predicates, 3);
+						new LowLevelPredicate[] {predicate}, columnIndexes, 
+						desc.getResourceId(), 20);
 		
 		// Now build the Hadoop query plan.
 		BulkProcessingOperator op = AbstractExtensionFactory.getExtensionFactory().
@@ -94,11 +98,74 @@ public class TestHadoopOperatorsStudents {
 				
 		Assert.assertTrue(op.run());
 		
-		Assert.assertTrue(TestUtils.compareTableToQueryPlan(dbInstance, table, root));
+		TestUtils.compareTableToQueryPlan(
+				dbInstance, op.getResultTableName(), referencePlan);
 	}
 	
 	@Test
 	public void testScanOperatorOnLargeTable() throws IOException, BufferPoolException, PageExpiredException, PageTupleAccessException, QueryExecutionException {
-		testScanOperator("lineitem", new LowLevelPredicate(Operator.GREATER, new IntField(200), 0));
+		testScanOperator("lineitem", 
+				new LowLevelPredicate(Operator.GREATER, new IntField(200), 0));
+	}
+	
+	@Test
+	public void testScanOperatorOnSmallTable() throws IOException, BufferPoolException, PageExpiredException, PageTupleAccessException, QueryExecutionException {
+		testScanOperator("region", 
+				new LowLevelPredicate(Operator.GREATER, new IntField(2), 0));
+	}
+	
+	@Test
+	public void testGroupByOperator() throws PageExpiredException, PageTupleAccessException, IOException, QueryExecutionException, BufferPoolException {
+		TableDescriptor desc = dbInstance.getCatalogue().getTable("customer");
+		
+		int[] groupColumns = new int[] {3};
+		int[] aggColumns = new int[] {5,5,5,5,5};
+		OutputColumn.AggregationType[] aggs = 
+				new OutputColumn.AggregationType[] {
+					OutputColumn.AggregationType.COUNT,
+					OutputColumn.AggregationType.SUM,
+					OutputColumn.AggregationType.AVG,
+					OutputColumn.AggregationType.MIN,
+					OutputColumn.AggregationType.MAX};
+		DataType[] aggTypes = new DataType[] {
+				DataType.intType(),
+				DataType.floatType(),
+				DataType.floatType(),
+				DataType.floatType(),
+				DataType.floatType()};
+		int[] groupOutput = new int[] {0, -1, -1, -1, -1, -1};
+		int[] aggOutput = new int[] {-1 , 0, 1, 2, 3, 4};
+		
+		// Set up the reference plan.
+		int columnIndexes[] = new int[desc.getSchema().getNumberOfColumns()];
+		for (int i=0; i<columnIndexes.length; ++i) columnIndexes[i] = i;
+		PhysicalPlanOperator referencePlan = new TableScanOperatorImpl(
+				dbInstance.getBufferPool(), desc.getResourceManager(), null, 
+				columnIndexes, desc.getResourceId(), 150);
+		DataType[] sortSchema = 
+				new DataType[desc.getSchema().getNumberOfColumns()];
+		for (int i=0; i<sortSchema.length; ++i) {
+			sortSchema[i] = desc.getSchema().getColumn(i).getDataType();
+		}
+		referencePlan = new SortOperatorImpl(referencePlan,
+				dbInstance.getQueryHeap(), sortSchema,
+				(int) desc.getStatistics().getCardinality(), 
+				new int[] {3}, new boolean[] {false});
+		referencePlan = new GroupByOperatorImpl(referencePlan,
+				new int[] {3}, aggColumns, aggs, aggTypes,
+				groupOutput, aggOutput);
+		
+		// Now set up the Hadoop operator plan.
+		BulkProcessingOperator op = AbstractExtensionFactory.getExtensionFactory().
+				createHadoopGroupByOperator(
+						dbInstance, 
+						new TableInputOperator(dbInstance, "customer"),
+						groupColumns, aggColumns, aggs, aggTypes, 
+						groupOutput, aggOutput);
+		Assert.assertTrue(op.run());
+		
+		// And compare both plans.
+		TestUtils.compareTableToQueryPlan(dbInstance, op.getResultTableName(),
+				referencePlan);
 	}
 }
