@@ -54,7 +54,8 @@ public class ScanOperator extends HadoopOperator<Text, DataTuple>{
 //				if(predicate == null){
 //					context.write(text, tuple);
 //				} 
-//				 
+//
+
 				if(predicate.evaluate(tuple)){
 					context.write(text, tuple);
 //					System.out.println(tuple.toString());

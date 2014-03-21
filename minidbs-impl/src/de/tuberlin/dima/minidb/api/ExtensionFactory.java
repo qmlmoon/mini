@@ -22,6 +22,7 @@ import de.tuberlin.dima.minidb.mapred.TableInputFormatImpl;
 import de.tuberlin.dima.minidb.mapred.qexec.BulkProcessingOperator;
 import de.tuberlin.dima.minidb.mapred.qexec.HadoopOperator;
 import de.tuberlin.dima.minidb.mapred.qexec.ScanOperator;
+import de.tuberlin.dima.minidb.mapred.qexec.GroupByOperatorImpl;
 import de.tuberlin.dima.minidb.optimizer.cardinality.CardinalityEstimator;
 import de.tuberlin.dima.minidb.optimizer.cost.CostEstimator;
 import de.tuberlin.dima.minidb.optimizer.generator.PhysicalPlanGenerator;
@@ -196,6 +197,7 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 	public HadoopOperator<?, ?> createHadoopTableScanOperator(
 			DBInstance instance, BulkProcessingOperator child,
 			LocalPredicate predicate) {
+
 		try {
 			return new ScanOperator(instance, child, predicate);
 		} catch (IOException e) {
@@ -211,6 +213,13 @@ public class ExtensionFactory extends AbstractExtensionFactory {
 			int[] aggColumnIndices, AggregationType[] aggregateFunctions,
 			DataType[] aggColumnTypes, int[] groupColumnOutputPositions,
 			int[] aggregateColumnOutputPosition) {
-		throw new UnsupportedOperationException("Method not yet supported");
+
+
+		try {
+			return new GroupByOperatorImpl(instance, child, groupColumnIndices, aggColumnIndices, aggregateFunctions, aggColumnTypes, groupColumnOutputPositions, aggregateColumnOutputPosition);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

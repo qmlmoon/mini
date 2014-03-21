@@ -2,6 +2,7 @@ package de.tuberlin.dima.minidb.test.mapred.qexec;
 
 import java.io.IOException;
 
+import de.tuberlin.dima.minidb.api.ExtensionFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -117,7 +118,7 @@ public class TestHadoopOperatorsStudents {
 	@Test
 	public void testGroupByOperator() throws PageExpiredException, PageTupleAccessException, IOException, QueryExecutionException, BufferPoolException {
 		TableDescriptor desc = dbInstance.getCatalogue().getTable("customer");
-		
+
 		int[] groupColumns = new int[] {3};
 		int[] aggColumns = new int[] {5,5,5,5,5};
 		OutputColumn.AggregationType[] aggs = 
@@ -154,14 +155,15 @@ public class TestHadoopOperatorsStudents {
 		referencePlan = new GroupByOperatorImpl(referencePlan,
 				new int[] {3}, aggColumns, aggs, aggTypes,
 				groupOutput, aggOutput);
-		
+
+		ExtensionFactory ef = new ExtensionFactory();
 		// Now set up the Hadoop operator plan.
-		BulkProcessingOperator op = AbstractExtensionFactory.getExtensionFactory().
+		BulkProcessingOperator op = ef.
 				createHadoopGroupByOperator(
-						dbInstance, 
-						new TableInputOperator(dbInstance, "customer"),
-						groupColumns, aggColumns, aggs, aggTypes, 
-						groupOutput, aggOutput);
+					dbInstance,
+					new TableInputOperator(dbInstance, "customer"),
+					groupColumns, aggColumns, aggs, aggTypes,
+					groupOutput, aggOutput);
 		Assert.assertTrue(op.run());
 		
 		// And compare both plans.
